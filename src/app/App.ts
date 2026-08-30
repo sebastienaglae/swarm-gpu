@@ -7,7 +7,18 @@ import { toUserFacingError } from '../gpu/GpuError';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import { InputState } from '../input/InputState';
 import { OrbitCamera } from '../renderer/OrbitCamera';
-import { STATIC_POPULATION_PRESETS, StaticSwarmRenderer } from '../renderer/StaticSwarmRenderer';
+import {
+  STATIC_POPULATION_PRESETS,
+  type SimulationFrame,
+  StaticSwarmRenderer,
+} from '../renderer/StaticSwarmRenderer';
+import {
+  FIXED_BENCHMARK_DELTA_SECONDS,
+  type InteractionMode,
+  MAX_SIMULATION_DELTA_SECONDS,
+  SIMULATION_DEFAULTS,
+  signedInteractionStrength,
+} from '../simulation/SimulationModel';
 import { AppStateStore } from './AppState';
 
 const MAX_AUTOMATIC_RECOVERY_ATTEMPTS = 1;
@@ -28,9 +39,37 @@ export class App {
   readonly #pauseButton: HTMLButtonElement;
   readonly #resetButton: HTMLButtonElement;
   readonly #populationSelect: HTMLSelectElement;
+  readonly #interactionMode: HTMLSelectElement;
+  readonly #interactionStrength: HTMLInputElement;
+  readonly #interactionRadius: HTMLInputElement;
   readonly #input = new InputState();
   readonly #cameraInput = new Float32Array(3);
   readonly #camera = new OrbitCamera();
+  readonly #attractorPosition = new Float32Array(3);
+  readonly #simulationFrame: SimulationFrame & {
+    timeSeconds: number;
+    deltaSeconds: number;
+    attractorX: number;
+    attractorY: number;
+    attractorZ: number;
+    attractorStrength: number;
+    attractorRadius: number;
+    frameIndex: number;
+  } = {
+    timeSeconds: 0,
+    deltaSeconds: 0,
+    attractorX: 0,
+    attractorY: 0,
+    attractorZ: 0,
+    attractorStrength: 0,
+    boundaryRadius: SIMULATION_DEFAULTS.boundaryRadius,
+    maxSpeed: SIMULATION_DEFAULTS.maxSpeed,
+    containmentStrength: SIMULATION_DEFAULTS.containmentStrength,
+    maxAcceleration: SIMULATION_DEFAULTS.maxAcceleration,
+    noiseStrength: SIMULATION_DEFAULTS.noiseStrength,
+    attractorRadius: SIMULATION_DEFAULTS.attractorRadius,
+    frameIndex: 0,
+  };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
   readonly #resizeObserver: ResizeObserver;
   #gpu: GpuContext | undefined;
@@ -42,10 +81,11 @@ export class App {
   #automaticRecoveryAttempts = 0;
   #visibilityPaused = false;
   #initializedListeners = false;
-  #instanceCount = 100_000;
+  #instanceCount = 500_000;
   #lastFrameTimestamp = 0;
   #smoothedFrameInterval = 16.67;
   #lastDiagnosticsTimestamp = 0;
+  readonly #fixedTimestep = new URLSearchParams(location.search).get('benchmark') === '1';
 
   readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
@@ -58,10 +98,36 @@ export class App {
       const [orbitX = 0, orbitY = 0, zoom = 0] = this.#cameraInput;
       this.#camera.applyInput(orbitX, orbitY, zoom);
       this.#camera.update();
+      const elapsedSeconds =
+        this.#lastFrameTimestamp > 0 ? (timestamp - this.#lastFrameTimestamp) * 0.001 : 0;
+      this.#simulationFrame.timeSeconds = timestamp * 0.001;
+      this.#simulationFrame.deltaSeconds = this.#fixedTimestep
+        ? FIXED_BENCHMARK_DELTA_SECONDS
+        : Math.min(MAX_SIMULATION_DELTA_SECONDS, Math.max(0, elapsedSeconds));
+      this.#simulationFrame.frameIndex += 1;
+      const pointerActive = (this.#input.pointer[4] ?? 0) === 1;
+      const hasAttractor =
+        pointerActive &&
+        this.#camera.projectPointerToTargetPlane(
+          this.#attractorPosition,
+          this.#input.pointer[0] ?? 0,
+          this.#input.pointer[1] ?? 0,
+          this.#canvas.clientWidth,
+          this.#canvas.clientHeight,
+        );
+      this.#simulationFrame.attractorX = this.#attractorPosition[0] ?? 0;
+      this.#simulationFrame.attractorY = this.#attractorPosition[1] ?? 0;
+      this.#simulationFrame.attractorZ = this.#attractorPosition[2] ?? 0;
+      this.#simulationFrame.attractorStrength = signedInteractionStrength(
+        this.#interactionMode.value as InteractionMode,
+        Number(this.#interactionStrength.value),
+        hasAttractor,
+      );
+      this.#simulationFrame.attractorRadius = Number(this.#interactionRadius.value);
       renderer.render(
         gpu.canvasContext,
         this.#camera,
-        timestamp * 0.001,
+        this.#simulationFrame,
         this.#canvasSize.width,
         this.#canvasSize.height,
         this.#instanceCount,
@@ -137,6 +203,9 @@ export class App {
     this.#pauseButton = requireElement(root, '#pause-button', HTMLButtonElement);
     this.#resetButton = requireElement(root, '#reset-button', HTMLButtonElement);
     this.#populationSelect = requireElement(root, '#population-select', HTMLSelectElement);
+    this.#interactionMode = requireElement(root, '#interaction-mode', HTMLSelectElement);
+    this.#interactionStrength = requireElement(root, '#interaction-strength', HTMLInputElement);
+    this.#interactionRadius = requireElement(root, '#interaction-radius', HTMLInputElement);
     this.#resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry !== undefined) this.#resize(entry.contentRect.width, entry.contentRect.height);
@@ -251,6 +320,9 @@ export class App {
     this.#input.reset();
     this.#camera.reset();
     this.#camera.update();
+    this.#renderer?.resetSimulation();
+    this.#simulationFrame.frameIndex = 0;
+    this.#lastFrameTimestamp = 0;
   }
 
   public simulateDeviceLossForDevelopment(): void {
@@ -271,6 +343,16 @@ export class App {
       frameIntervalMs: this.#frameIntervalSamples.snapshot(),
       cpuFrameMs: this.#renderer?.captureCpuFrameSamples() ?? [],
     };
+  }
+
+  public async captureSimulationStateForDevelopment(instanceCount = 8): Promise<{
+    readonly positions: Float32Array;
+    readonly velocities: Float32Array;
+  }> {
+    if (!import.meta.env.DEV || this.state.current !== 'paused' || this.#renderer === undefined) {
+      throw new Error('Simulation readback is available only in development while paused');
+    }
+    return this.#renderer.captureSimulationState(Math.min(64, Math.max(1, instanceCount)));
   }
 
   public dispose(): void {
@@ -388,8 +470,9 @@ export class App {
     }
     if (largestSupported === 0)
       throw new Error('This adapter cannot render the minimum population');
-    this.#instanceCount = largestSupported;
-    this.#populationSelect.value = String(largestSupported);
+    const preferred = Math.min(500_000, largestSupported);
+    this.#instanceCount = preferred;
+    this.#populationSelect.value = String(preferred);
   }
 }
 

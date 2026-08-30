@@ -4,11 +4,16 @@ struct Globals {
   viewProjection: mat4x4<f32>,
   cameraAndTime: vec4<f32>,
   viewportAndCount: vec4<f32>,
+  attractorAndStrength: vec4<f32>,
+  simulationA: vec4<f32>,
+  simulationB: vec4<f32>,
+  simulationC: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
 @group(0) @binding(1) var<storage, read> instancePositions: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> instanceAppearance: array<vec4<u32>>;
+@group(0) @binding(3) var<storage, read> instanceVelocities: array<vec4<f32>>;
 
 struct VertexInput {
   @location(0) position: vec3<f32>,
@@ -35,7 +40,9 @@ fn unpackRgb(packed: u32) -> vec3<f32> {
 fn vertexMain(input: VertexInput, @builtin(instance_index) instanceId: u32) -> VertexOutput {
   let state = instancePositions[instanceId];
   let appearance = instanceAppearance[instanceId];
-  let heading = bitcast<f32>(appearance.y);
+  let velocity = instanceVelocities[instanceId].xyz;
+  let storedHeading = bitcast<f32>(appearance.y);
+  let heading = select(storedHeading, atan2(velocity.x, velocity.z), dot(velocity.xz, velocity.xz) > 0.0001);
   let sine = sin(heading);
   let cosine = cos(heading);
   let scaled = input.position * state.w;

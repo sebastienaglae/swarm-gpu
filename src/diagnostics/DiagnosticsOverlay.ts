@@ -13,6 +13,8 @@ export class DiagnosticsOverlay {
   readonly #instances: HTMLOutputElement;
   readonly #triangles: HTMLOutputElement;
   readonly #draws: HTMLOutputElement;
+  readonly #dispatches: HTMLOutputElement;
+  readonly #memory: HTMLOutputElement;
   readonly #fps: HTMLOutputElement;
   readonly #frame: HTMLOutputElement;
   readonly #cpu: HTMLOutputElement;
@@ -28,6 +30,8 @@ export class DiagnosticsOverlay {
     this.#instances = requireOutput('metric-instances');
     this.#triangles = requireOutput('metric-triangles');
     this.#draws = requireOutput('metric-draws');
+    this.#dispatches = requireOutput('metric-dispatches');
+    this.#memory = requireOutput('metric-memory');
     this.#fps = requireOutput('metric-fps');
     this.#frame = requireOutput('metric-frame');
     this.#cpu = requireOutput('metric-cpu');
@@ -64,6 +68,8 @@ export class DiagnosticsOverlay {
 
   public setRenderer(renderer: StaticSwarmRenderer, instanceCount: number): void {
     this.#draws.value = String(renderer.drawCalls);
+    this.#dispatches.value = String(renderer.computeDispatches);
+    this.#memory.value = `${(renderer.estimatedStateBytes / 1_048_576).toFixed(1)} MiB estimated`;
     this.#gpu.value = 'not measured (Phase 06)';
     this.setPopulation(instanceCount, renderer.triangleCount);
   }

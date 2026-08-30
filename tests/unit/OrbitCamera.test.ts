@@ -30,4 +30,15 @@ describe('OrbitCamera', () => {
     camera.setViewport(1920, 1080);
     expect(camera.update()).toBe(true);
   });
+
+  it('projects the viewport center onto the world target plane', () => {
+    const camera = new OrbitCamera();
+    camera.setViewport(1920, 1080);
+    camera.update();
+    const point = new Float32Array(3);
+    expect(camera.projectPointerToTargetPlane(point, 960, 540, 1920, 1080)).toBe(true);
+    expect(point[0]).toBeCloseTo(0, 4);
+    expect(point[1]).toBeCloseTo(0, 4);
+    expect(point[2]).toBeCloseTo(0, 4);
+  });
 });

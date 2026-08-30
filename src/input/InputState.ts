@@ -1,5 +1,6 @@
 export class InputState {
-  public readonly pointer = new Float32Array(4);
+  // x, y, pressed flag, button, inside-canvas flag.
+  public readonly pointer = new Float32Array(5);
   public readonly orbitDelta = new Float32Array(3);
   #attached = false;
   readonly #onPointerMove = (event: PointerEvent): void => {
@@ -30,6 +31,13 @@ export class InputState {
   readonly #onLostPointerCapture = (): void => {
     this.pointer[2] = 0;
     this.pointer[3] = -1;
+    this.pointer[4] = 0;
+  };
+  readonly #onPointerEnter = (): void => {
+    this.pointer[4] = 1;
+  };
+  readonly #onPointerLeave = (): void => {
+    this.pointer[4] = 0;
   };
   readonly #onWheel = (event: WheelEvent): void => {
     this.orbitDelta[2] = (this.orbitDelta[2] ?? 0) + event.deltaY;
@@ -44,6 +52,8 @@ export class InputState {
     canvas.addEventListener('pointerup', this.#onPointerUp);
     canvas.addEventListener('pointercancel', this.#onPointerUp);
     canvas.addEventListener('lostpointercapture', this.#onLostPointerCapture);
+    canvas.addEventListener('pointerenter', this.#onPointerEnter);
+    canvas.addEventListener('pointerleave', this.#onPointerLeave);
     canvas.addEventListener('wheel', this.#onWheel, { passive: false });
   }
 
@@ -55,6 +65,8 @@ export class InputState {
     canvas.removeEventListener('pointerup', this.#onPointerUp);
     canvas.removeEventListener('pointercancel', this.#onPointerUp);
     canvas.removeEventListener('lostpointercapture', this.#onLostPointerCapture);
+    canvas.removeEventListener('pointerenter', this.#onPointerEnter);
+    canvas.removeEventListener('pointerleave', this.#onPointerLeave);
     canvas.removeEventListener('wheel', this.#onWheel);
   }
 

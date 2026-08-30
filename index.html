@@ -29,6 +29,8 @@
         <div><span>Instances</span><output id="metric-instances">—</output></div>
         <div><span>Triangles</span><output id="metric-triangles">—</output></div>
         <div><span>Draw calls</span><output id="metric-draws">—</output></div>
+        <div><span>Compute dispatches</span><output id="metric-dispatches">—</output></div>
+        <div><span>State memory</span><output id="metric-memory">—</output></div>
         <div><span>FPS</span><output id="metric-fps">—</output></div>
         <div><span>Frame interval</span><output id="metric-frame">—</output></div>
         <div><span>CPU encode + submit</span><output id="metric-cpu">—</output></div>
@@ -38,10 +40,27 @@
         <label>
           Population
           <select id="population-select">
-            <option value="10000">10,000</option>
-            <option value="50000">50,000</option>
-            <option value="100000" selected>100,000</option>
+            <option value="100000">100,000</option>
+            <option value="250000">250,000</option>
+            <option value="500000" selected>500,000</option>
+            <option value="1000000">1,000,000</option>
           </select>
+        </label>
+        <label>
+          Pointer force
+          <select id="interaction-mode">
+            <option value="disabled">Disabled</option>
+            <option value="attract" selected>Attract</option>
+            <option value="repel">Repel</option>
+          </select>
+        </label>
+        <label>
+          Strength
+          <input id="interaction-strength" type="range" min="0" max="40" step="1" value="18" />
+        </label>
+        <label>
+          Radius
+          <input id="interaction-radius" type="range" min="4" max="60" step="1" value="24" />
         </label>
         <button id="pause-button" type="button">Pause</button>
         <button id="reset-button" type="button">Reset</button>

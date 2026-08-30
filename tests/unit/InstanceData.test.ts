@@ -11,6 +11,7 @@ describe('static instance generation', () => {
     const other = createStaticInstanceData(64, 124);
     expect(first.positions).toEqual(second.positions);
     expect(first.appearance).toEqual(second.appearance);
+    expect(first.velocities).toEqual(second.velocities);
     expect(first.positions).not.toEqual(other.positions);
   });
 
@@ -19,6 +20,7 @@ describe('static instance generation', () => {
     const data = createStaticInstanceData(count);
     expect(data.positions).toHaveLength(count * POSITION_FLOATS_PER_INSTANCE);
     expect(data.appearance).toHaveLength(count * APPEARANCE_UINTS_PER_INSTANCE);
+    expect(data.velocities).toHaveLength(count * POSITION_FLOATS_PER_INSTANCE);
     for (let instance = 0; instance < count; instance += 1) {
       const offset = instance * POSITION_FLOATS_PER_INSTANCE;
       const values = data.positions.slice(offset, offset + POSITION_FLOATS_PER_INSTANCE);

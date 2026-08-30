@@ -1,7 +1,9 @@
 export const POSITION_FLOATS_PER_INSTANCE = 4;
 export const APPEARANCE_UINTS_PER_INSTANCE = 4;
+export const VELOCITY_FLOATS_PER_INSTANCE = 4;
 export const POSITION_BYTES_PER_INSTANCE = 16;
 export const APPEARANCE_BYTES_PER_INSTANCE = 16;
+export const VELOCITY_BYTES_PER_INSTANCE = 16;
 export const STATIC_INSTANCE_SEED = 0x5a17c9e3;
 
 const PALETTE = new Uint32Array([
@@ -13,6 +15,7 @@ const PALETTE = new Uint32Array([
 
 export interface StaticInstanceData {
   readonly positions: Float32Array;
+  readonly velocities: Float32Array;
   readonly appearance: Uint32Array;
 }
 
@@ -46,6 +49,7 @@ export function createStaticInstanceData(
     throw new RangeError('instance count must be a safe non-negative integer');
   }
   const positions = new Float32Array(instanceCount * POSITION_FLOATS_PER_INSTANCE);
+  const velocities = new Float32Array(instanceCount * VELOCITY_FLOATS_PER_INSTANCE);
   const appearance = new Uint32Array(instanceCount * APPEARANCE_UINTS_PER_INSTANCE);
   const random = new XorShift32(seed);
   const floatScratch = new Float32Array(1);
@@ -63,6 +67,14 @@ export function createStaticInstanceData(
     positions[positionOffset + 2] = Math.sin(azimuth) * horizontal * radial;
     positions[positionOffset + 3] = 0.16 + random.nextFloat() * 0.24;
 
+    const tangentX = -Math.sin(azimuth);
+    const tangentZ = Math.cos(azimuth);
+    const initialSpeed = 1.4 + random.nextFloat() * 2.2;
+    velocities[positionOffset] = tangentX * initialSpeed + (random.nextFloat() - 0.5) * 0.35;
+    velocities[positionOffset + 1] = (random.nextFloat() - 0.5) * 0.8;
+    velocities[positionOffset + 2] = tangentZ * initialSpeed + (random.nextFloat() - 0.5) * 0.35;
+    velocities[positionOffset + 3] = random.nextFloat() * Math.PI * 2;
+
     floatScratch[0] = random.nextFloat() * Math.PI * 2;
     appearance[appearanceOffset] = readNumber(
       PALETTE,
@@ -74,7 +86,7 @@ export function createStaticInstanceData(
     appearance[appearanceOffset + 3] = random.nextUint32() & 3;
   }
 
-  return { positions, appearance };
+  return { positions, velocities, appearance };
 }
 
 function packRgba(red: number, green: number, blue: number, alpha: number): number {
