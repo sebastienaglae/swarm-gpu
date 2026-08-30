@@ -467,6 +467,20 @@ export class App {
     return this.#renderer.captureSimulationState(Math.min(64, Math.max(1, instanceCount)));
   }
 
+  public async captureLodCountsForDevelopment(): Promise<{
+    readonly lodCounts: readonly number[];
+    readonly overflowCounts: readonly number[];
+  }> {
+    if (!import.meta.env.DEV || this.state.current !== 'paused' || this.#renderer === undefined) {
+      throw new Error('LOD counter readback is available only in development while paused');
+    }
+    const capture = await this.#renderer.captureVisibility(0);
+    return {
+      lodCounts: Array.from(capture.lodCounts),
+      overflowCounts: Array.from(capture.lodOverflowCounts),
+    };
+  }
+
   public async compareSimulationFixtureForDevelopment(instanceCount = 8): Promise<{
     readonly fixtureCount: number;
     readonly maxAbsoluteError: number;
