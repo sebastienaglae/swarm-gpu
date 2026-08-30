@@ -23,6 +23,6 @@ The browser exposed vendor `nvidia` and architecture `turing`, but withheld its 
 
 The screenshots contain no username, hostname, private path, or browser profile data.
 
-## Remaining external evidence
+## Remote CI evidence
 
-The GitHub Actions workflow is committed and its local equivalent passes. A remote green workflow link cannot exist until these commits are pushed; pushes are intentionally outside the current authorization. This does not weaken the local implementation evidence but remains an external Phase 01 release gate.
+GitHub Actions CI #9 passed on commit `d6a0039` on 2026-08-30. The successful run covered the committed clean-install quality and browser-smoke jobs. After the run, both local `HEAD` and `origin/main` were independently verified at `d6a0039`.

@@ -1,8 +1,8 @@
 # Phase 01 — Project foundation
 
-- Implementation status: Complete
+- Status: Complete
 - Local qualification: Passed on 2026-08-30
-- Remote CI gate: Pending an authorized push
+- Remote CI gate: Passed on 2026-08-30 (CI #9, commit `d6a0039`)
 - Owners: SwarmGPU maintainers
 
 ## Objective
@@ -111,13 +111,13 @@ Application lifecycle states are `idle -> initializing -> ready -> running -> pa
 - [Supported clear-pass screenshot](../evidence/phase-01/supported-clear-screen.png) and [unsupported-state screenshot](../evidence/phase-01/unsupported-webgpu.png).
 - Local quality gate: 20/20 unit tests plus formatting, lint, strict types, and production build.
 - Browser gate: 3/3 supported/failure/recovery flows.
-- Remote CI run link/badge remains pending because no push is authorized.
+- Remote GitHub Actions gate: CI #9 passed on commit `d6a0039`.
 
 ## Qualification record
 
 All implementation checklist items and locally executable exit criteria passed on 2026-08-30. Installed Chrome selected a hardware WebGPU adapter reporting vendor `nvidia`, architecture `turing`, and `timestamp-query`; the application rendered a 1920×1080 clear pass with no uncaptured GPU or console error. Capability limits and derived capacity are retained in the evidence directory.
 
-The committed GitHub Actions workflow runs clean install, the aggregate quality gate, a production build, and browser smoke tests. Its remote-green exit criterion cannot be observed until the local commits are pushed. The project policy explicitly forbids this agent from pushing, so Phase 02 work may be prepared locally, but the public Phase 01 exit gate remains externally pending.
+The committed GitHub Actions workflow runs clean install, the aggregate quality gate, a production build, and browser smoke tests. CI #9 passed on `d6a0039`; `origin/main` was independently verified at that same commit. All Phase 01 exit criteria are therefore satisfied.
 
 ## Risks and mitigations
 
