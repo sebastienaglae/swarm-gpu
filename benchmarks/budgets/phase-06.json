@@ -1,0 +1,14 @@
+{
+  "budgetVersion": "1.0.0",
+  "referenceCommit": "8b9ff88",
+  "environment": "nvidia-turing-chrome-win11",
+  "scenarios": {
+    "STATIC-100K": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 2 },
+    "SIM-250K": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 4 },
+    "CULL-1M-10": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 3 },
+    "CULL-1M-100": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 8 },
+    "LOD-500K": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 5 },
+    "SCALE-500K-720": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 4 },
+    "SCALE-500K-50": { "frameP95Ms": 18, "cpuMedianMs": 0.6, "gpuMedianMs": 4 }
+  }
+}

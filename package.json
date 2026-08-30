@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "benchmark:smoke": "node scripts/benchmark-phase-06.mjs http://127.0.0.1:5174/",
     "benchmark:compare": "node scripts/compare-phase-06.mjs",
+    "benchmark:budgets": "node scripts/check-phase-06-budgets.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {

@@ -256,6 +256,12 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#metric-dispatches')).toHaveText('3 @ 128 threads');
   await expect(page.locator('#metric-gpu')).toContainText('delayed');
   await expect(page.locator('#metric-lod')).toContainText('f)');
+  const diagnosticsReport = await page.evaluate(() =>
+    Reflect.get(globalThis, '__SWARM_GPU_APP__').captureDiagnosticsReport(),
+  );
+  expect(diagnosticsReport.capabilities.timestampQuery).toBe(true);
+  expect(diagnosticsReport.warning).toContain('approximate');
+  expect(Array.isArray(diagnosticsReport.metrics.frameIntervalMs)).toBe(true);
   await page.locator('#population-select').selectOption('100000');
   await expect(page.locator('#metric-instances')).toHaveText('100,000');
   await expect

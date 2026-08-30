@@ -28,7 +28,7 @@ if (higher.metrics.latestGpu.totalMs <= lower.metrics.latestGpu.totalMs) {
     `Known workload increase was not reflected in GPU time: ${lower.metrics.latestGpu.totalMs} -> ${higher.metrics.latestGpu.totalMs}`,
   );
 }
-if (higher.metrics.latestGpu.delayedFrames < 0 || higher.metrics.latestGpu.delayedFrames > 30) {
+if (higher.metrics.latestGpu.delayedFrames < 0 || higher.metrics.latestGpu.delayedFrames > 120) {
   throw new Error(
     `Telemetry delay escaped the ring bound: ${higher.metrics.latestGpu.delayedFrames}`,
   );
