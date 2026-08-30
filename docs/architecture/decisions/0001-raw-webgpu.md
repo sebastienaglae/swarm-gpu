@@ -73,4 +73,3 @@ Unsupported browsers or adapters receive a clear capability screen. Optional Web
 
 - [Phase 00 product contract](../../phases/00-product-contract.md)
 - [Phase 01 foundation](../../phases/01-project-foundation.md)
-

@@ -1,7 +1,7 @@
 name: Performance report
 description: Report reproducible performance behavior on a specific device
-title: "perf: "
-labels: ["performance"]
+title: 'perf: '
+labels: ['performance']
 body:
   - type: dropdown
     id: phase
@@ -49,4 +49,3 @@ body:
       label: Raw report or reproduction notes
     validations:
       required: true
-

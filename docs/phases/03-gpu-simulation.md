@@ -89,10 +89,9 @@ Measure 100k, 250k, 500k, and 1m where capacity permits. For each, capture simul
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Extra ping-pong buffers consume too much memory | Compute exact budgets, pack immutable data, and clamp capacity |
-| Variable timestep changes benchmark behavior | Use fixed timestep in benchmark mode and report it |
-| Stored rotation increases bandwidth | Derive heading in vertex stage until profiling proves otherwise |
+| Risk                                                  | Mitigation                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------- |
+| Extra ping-pong buffers consume too much memory       | Compute exact budgets, pack immutable data, and clamp capacity        |
+| Variable timestep changes benchmark behavior          | Use fixed timestep in benchmark mode and report it                    |
+| Stored rotation increases bandwidth                   | Derive heading in vertex stage until profiling proves otherwise       |
 | Read/write binding mistake creates undefined behavior | Encode layouts and parity selection in typed resource sets with tests |
-

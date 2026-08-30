@@ -105,10 +105,9 @@ Application lifecycle states are `idle -> initializing -> ready -> running -> pa
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Type packages lag browser APIs | Pin compatible WebGPU types and isolate compatibility shims |
-| Device loss is untestable on demand | Provide a development recovery injection path and test state transitions separately |
-| High-DPI canvas exceeds limits | Clamp physical size and expose effective render resolution |
-| CI lacks hardware WebGPU | Keep GPU browser smoke tagged/conditional and run deterministic CPU-side tests everywhere |
-
+| Risk                                | Mitigation                                                                                |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| Type packages lag browser APIs      | Pin compatible WebGPU types and isolate compatibility shims                               |
+| Device loss is untestable on demand | Provide a development recovery injection path and test state transitions separately       |
+| High-DPI canvas exceeds limits      | Clamp physical size and expose effective render resolution                                |
+| CI lacks hardware WebGPU            | Keep GPU browser smoke tagged/conditional and run deterministic CPU-side tests everywhere |

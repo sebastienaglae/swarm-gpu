@@ -84,10 +84,9 @@ Run 10k, 50k, and 100k static instances at 1280×720 and 1920×1080 after warm-u
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| A detailed mesh hides pipeline costs with raster load | Keep vertex/index counts small and publish triangle counts |
-| Camera convention later breaks culling | Freeze/test matrix and clip-space conventions now |
-| Overlay distorts CPU measurements | Throttle overlay and disable it during measured benchmark windows |
-| Startup upload stalls | Chunk initialization and measure loading separately from steady state |
-
+| Risk                                                  | Mitigation                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------- |
+| A detailed mesh hides pipeline costs with raster load | Keep vertex/index counts small and publish triangle counts            |
+| Camera convention later breaks culling                | Freeze/test matrix and clip-space conventions now                     |
+| Overlay distorts CPU measurements                     | Throttle overlay and disable it during measured benchmark windows     |
+| Startup upload stalls                                 | Chunk initialization and measure loading separately from steady state |

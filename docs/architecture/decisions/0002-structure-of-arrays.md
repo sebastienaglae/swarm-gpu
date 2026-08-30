@@ -81,4 +81,3 @@ Orientation is derived from velocity in rendering unless later evidence shows th
 - [Memory budget](../../architecture/memory-budget.md)
 - [Phase 00 product contract](../../phases/00-product-contract.md)
 - [Phase 06 performance plan](../../phases/06-performance-observability.md)
-

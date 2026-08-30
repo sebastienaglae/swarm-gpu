@@ -50,4 +50,3 @@ List the tests, benchmark scenarios, captures, or prototypes that will prove the
 
 - Phase document or issue.
 - Superseded/superseding ADR, if any.
-

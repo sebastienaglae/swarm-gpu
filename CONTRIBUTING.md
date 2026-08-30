@@ -55,4 +55,3 @@ New assets need source, author, license, and transformation notes. New runtime d
 ## Reporting problems
 
 Use the bug template for reproducible defects and the performance template for device-specific results. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
-

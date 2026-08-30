@@ -1,7 +1,7 @@
 name: Bug report
 description: Report a reproducible correctness or lifecycle defect
-title: "bug: "
-labels: ["bug"]
+title: 'bug: '
+labels: ['bug']
 body:
   - type: dropdown
     id: phase
@@ -51,4 +51,3 @@ body:
     attributes:
       label: Diagnostics
       description: Console/validation output, screenshots, or exported report. Remove private information.
-

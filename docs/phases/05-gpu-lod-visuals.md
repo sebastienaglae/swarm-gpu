@@ -11,11 +11,11 @@ Classify visible instances into three GPU-resident LOD streams and turn the tech
 
 ## LOD design
 
-| LOD | Intended range | Representation | Goal |
-|---|---|---|---|
-| 0 near | Close | Low-poly drone mesh | Recognizable silhouette and orientation |
-| 1 mid | Medium | Simplified wedge/fragment mesh | Lower vertex cost, coherent movement |
-| 2 far | Distant | Camera-facing quad or point-like billboard | Minimal geometry and luminous density |
+| LOD    | Intended range | Representation                             | Goal                                    |
+| ------ | -------------- | ------------------------------------------ | --------------------------------------- |
+| 0 near | Close          | Low-poly drone mesh                        | Recognizable silhouette and orientation |
+| 1 mid  | Medium         | Simplified wedge/fragment mesh             | Lower vertex cost, coherent movement    |
+| 2 far  | Distant        | Camera-facing quad or point-like billboard | Minimal geometry and luminous density   |
 
 Exact thresholds are scene parameters chosen through projected screen size, not arbitrary world distance alone. Add hysteresis or a transition band if threshold flicker is visible. Very distant or subpixel instances may be culled.
 
@@ -72,10 +72,9 @@ Exact thresholds are scene parameters chosen through projected screen size, not 
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Billboards require expensive blending/sorting | Use additive/opaque-soft visuals and avoid sorted alpha |
-| LOD classification triples atomic contention | Use independent counters and profile per stream |
-| Visual polish masks renderer cost | Benchmark core, background, and optional effects independently |
-| Threshold flicker distracts | Base selection on projected size and add measured hysteresis/transition band |
-
+| Risk                                          | Mitigation                                                                   |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| Billboards require expensive blending/sorting | Use additive/opaque-soft visuals and avoid sorted alpha                      |
+| LOD classification triples atomic contention  | Use independent counters and profile per stream                              |
+| Visual polish masks renderer cost             | Benchmark core, background, and optional effects independently               |
+| Threshold flicker distracts                   | Base selection on projected size and add measured hysteresis/transition band |

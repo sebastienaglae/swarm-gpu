@@ -36,4 +36,3 @@ Issue:
 - [ ] I separated measured results from estimates or targets.
 - [ ] I documented the provenance and license of new assets/dependencies.
 - [ ] I included no credentials, private paths, or personal data.
-

@@ -11,12 +11,11 @@ Architecture decision records (ADRs) capture decisions that affect SwarmGPU's sc
 
 ## Index
 
-| ADR | Status | Decision |
-|---|---|---|
-| [0001](0001-raw-webgpu.md) | Accepted | Use raw WebGPU as the only rendering API |
+| ADR                                 | Status   | Decision                                              |
+| ----------------------------------- | -------- | ----------------------------------------------------- |
+| [0001](0001-raw-webgpu.md)          | Accepted | Use raw WebGPU as the only rendering API              |
 | [0002](0002-structure-of-arrays.md) | Accepted | Start with Structure of Arrays for GPU instance state |
 
 ## Process
 
 Copy [the template](template.md), assign the next four-digit number, and open it as `Proposed`. The pull request must include alternatives, consequences, validation, and links to the affected phase. An ADR becomes `Accepted` only when the change is approved. Never rewrite the conclusion of an accepted ADR; supersede it with a new record.
-

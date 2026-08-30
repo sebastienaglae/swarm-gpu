@@ -15,4 +15,3 @@ You should receive acknowledgement within seven days. Validation and remediation
 ## Project security boundaries
 
 SwarmGPU is a static client-side demonstration. It does not require accounts, a backend, secrets, analytics, or user data. A contribution adding any of those changes the product boundary and requires an explicit project-contract decision before implementation.
-

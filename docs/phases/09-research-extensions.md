@@ -79,10 +79,9 @@ Every experiment begins with a short proposal containing hypothesis, baseline sc
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Research flags accumulate into untestable combinations | One experiment at a time; promote or remove promptly |
-| Vendor-specific optimization becomes default | Require multi-architecture evidence and maintain portable baseline |
-| New visuals dilute the technical story | Keep the fixed pipeline and benchmark evidence central |
-| Optional work delays maintenance | Phase 09 begins only after v1 release and uses bounded proposals |
-
+| Risk                                                   | Mitigation                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| Research flags accumulate into untestable combinations | One experiment at a time; promote or remove promptly               |
+| Vendor-specific optimization becomes default           | Require multi-architecture evidence and maintain portable baseline |
+| New visuals dilute the technical story                 | Keep the fixed pipeline and benchmark evidence central             |
+| Optional work delays maintenance                       | Phase 09 begins only after v1 release and uses bounded proposals   |

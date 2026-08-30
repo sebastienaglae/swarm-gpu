@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.local
+*.log
+.DS_Store
+
+# Local benchmark exploration. Curated baselines remain trackable.
+benchmarks/results/
+
+# Large diagnostic captures are local unless a phase explicitly curates them.
+docs/evidence/**/*.trace
+docs/evidence/**/*.zip
+docs/evidence/**/*.mp4

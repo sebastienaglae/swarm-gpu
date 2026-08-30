@@ -105,15 +105,19 @@
     "results": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["frameIntervalMs", "cpuFrameMs", "gpuFrameMs", "longFrameCount", "drawCalls", "readbacksPerMeasuredFrame"],
+      "required": [
+        "frameIntervalMs",
+        "cpuFrameMs",
+        "gpuFrameMs",
+        "longFrameCount",
+        "drawCalls",
+        "readbacksPerMeasuredFrame"
+      ],
       "properties": {
         "frameIntervalMs": { "$ref": "#/$defs/percentiles" },
         "cpuFrameMs": { "$ref": "#/$defs/percentiles" },
         "gpuFrameMs": {
-          "oneOf": [
-            { "$ref": "#/$defs/percentiles" },
-            { "type": "null" }
-          ]
+          "oneOf": [{ "$ref": "#/$defs/percentiles" }, { "type": "null" }]
         },
         "gpuTimingUnavailableReason": { "type": "string" },
         "longFrameCount": { "type": "integer", "minimum": 0 },
@@ -144,4 +148,3 @@
     }
   }
 }
-

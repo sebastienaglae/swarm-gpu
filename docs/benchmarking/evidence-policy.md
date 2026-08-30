@@ -60,4 +60,3 @@ Only verified release results may appear in the README headline benchmark table.
 ## Privacy and review
 
 Review every artifact before commit. Remove usernames, machine names, serial/device IDs, full private filesystem paths, tokens, browsing data, and unrelated application details. GPU model, driver, CPU model, RAM capacity, OS build, and browser version are intentional technical metadata.
-

@@ -3,4 +3,3 @@ contact_links:
   - name: Private security report
     url: https://github.com/sebastienaglae/swarm-gpu/security/advisories/new
     about: Report suspected vulnerabilities privately.
-

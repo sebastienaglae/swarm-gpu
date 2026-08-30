@@ -4,25 +4,25 @@ This worksheet estimates explicit SwarmGPU allocations before runtime adapter-li
 
 ## Canonical per-instance storage
 
-| Resource | Copies/regions | Bytes per element | Bytes per active instance |
-|---|---:|---:|---:|
-| Position + scale/radius | 2 ping-pong buffers | 16 | 32 |
-| Velocity + phase/seed | 2 ping-pong buffers | 16 | 32 |
-| Immutable appearance | 1 buffer | 16 | 16 |
-| Visible IDs | 3 LOD capacity regions | 4 | 12 |
-| **Total variable storage** |  |  | **92** |
+| Resource                   |         Copies/regions | Bytes per element | Bytes per active instance |
+| -------------------------- | ---------------------: | ----------------: | ------------------------: |
+| Position + scale/radius    |    2 ping-pong buffers |                16 |                        32 |
+| Velocity + phase/seed      |    2 ping-pong buffers |                16 |                        32 |
+| Immutable appearance       |               1 buffer |                16 |                        16 |
+| Visible IDs                | 3 LOD capacity regions |                 4 |                        12 |
+| **Total variable storage** |                        |                   |                    **92** |
 
 The three visible-ID regions each reserve the full selected instance capacity. This intentionally simple worst-case layout cannot overflow when all visible instances select the same LOD. Future compaction schemes may reduce it only with correctness and benchmark evidence.
 
 ## Population estimates
 
-| Population | Position | Velocity | Appearance | Visible IDs | Total bytes | Total MiB |
-|---:|---:|---:|---:|---:|---:|---:|
-| 10,000 | 320,000 | 320,000 | 160,000 | 120,000 | 920,000 | 0.88 |
-| 100,000 | 3,200,000 | 3,200,000 | 1,600,000 | 1,200,000 | 9,200,000 | 8.77 |
-| 250,000 | 8,000,000 | 8,000,000 | 4,000,000 | 3,000,000 | 23,000,000 | 21.93 |
-| 500,000 | 16,000,000 | 16,000,000 | 8,000,000 | 6,000,000 | 46,000,000 | 43.87 |
-| 1,000,000 | 32,000,000 | 32,000,000 | 16,000,000 | 12,000,000 | 92,000,000 | 87.74 |
+| Population |   Position |   Velocity | Appearance | Visible IDs | Total bytes | Total MiB |
+| ---------: | ---------: | ---------: | ---------: | ----------: | ----------: | --------: |
+|     10,000 |    320,000 |    320,000 |    160,000 |     120,000 |     920,000 |      0.88 |
+|    100,000 |  3,200,000 |  3,200,000 |  1,600,000 |   1,200,000 |   9,200,000 |      8.77 |
+|    250,000 |  8,000,000 |  8,000,000 |  4,000,000 |   3,000,000 |  23,000,000 |     21.93 |
+|    500,000 | 16,000,000 | 16,000,000 |  8,000,000 |   6,000,000 |  46,000,000 |     43.87 |
+|  1,000,000 | 32,000,000 | 32,000,000 | 16,000,000 |  12,000,000 |  92,000,000 |     87.74 |
 
 MiB uses 1,048,576 bytes. Position and velocity columns already include both ping-pong copies.
 
@@ -49,4 +49,3 @@ The conservative explicit allocation estimate for one million instances with dep
 ## Recalculation rules
 
 Update this worksheet and ADR 0002 when element strides, ping-pong ownership, LOD capacity, render targets, timing rings, or mesh formats change. A population cap change must include the updated arithmetic and runtime limit capture.
-

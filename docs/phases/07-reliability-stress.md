@@ -52,19 +52,19 @@ Failures are categorized as unsupported capability, initialization error, runtim
 
 ## Required stress matrix
 
-| Scenario | Duration/repetitions | Pass condition |
-|---|---:|---|
-| 10k soak | 10 min | No error, stable loop/resources |
-| 100k soak | 10 min | No error, bounded timing drift |
-| 500k soak | 10 min | No error on reference hardware |
-| 1m soak | 2 min | No error where supported |
-| Resize storm | 1,000 changes | Correct dimensions, old attachments released |
-| Pause/resume | 500 cycles | One loop, bounded delta, stable state |
-| LOD/quality switch | 500 cycles | No pipeline/buffer churn outside design |
-| Scene rebuild | 100 cycles | Resource counters return to baseline |
-| Tab hide/show | 100 cycles | No simulation explosion |
-| Recovery injection | 25 cycles | Bounded retry, correct state/user UI |
-| Capacity boundaries | min, max, max+1 | Accept safe values; reject unsafe value clearly |
+| Scenario            | Duration/repetitions | Pass condition                                  |
+| ------------------- | -------------------: | ----------------------------------------------- |
+| 10k soak            |               10 min | No error, stable loop/resources                 |
+| 100k soak           |               10 min | No error, bounded timing drift                  |
+| 500k soak           |               10 min | No error on reference hardware                  |
+| 1m soak             |                2 min | No error where supported                        |
+| Resize storm        |        1,000 changes | Correct dimensions, old attachments released    |
+| Pause/resume        |           500 cycles | One loop, bounded delta, stable state           |
+| LOD/quality switch  |           500 cycles | No pipeline/buffer churn outside design         |
+| Scene rebuild       |           100 cycles | Resource counters return to baseline            |
+| Tab hide/show       |           100 cycles | No simulation explosion                         |
+| Recovery injection  |            25 cycles | Bounded retry, correct state/user UI            |
+| Capacity boundaries |      min, max, max+1 | Accept safe values; reject unsafe value clearly |
 
 ## Test layers
 
@@ -84,10 +84,9 @@ Failures are categorized as unsupported capability, initialization error, runtim
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Hardware GPU CI is unavailable | Separate universal CI from recorded release qualification on named hardware |
-| Device loss cannot be forced reliably | Inject lifecycle loss events and document limits of the simulation |
-| Long tests are flaky from thermal state | Record clocks/power context when possible and distinguish correctness from timing gates |
-| Apparent memory growth is browser caching | Track owned resources and repeat rebuild baselines before declaring a leak |
-
+| Risk                                      | Mitigation                                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------------------------- |
+| Hardware GPU CI is unavailable            | Separate universal CI from recorded release qualification on named hardware             |
+| Device loss cannot be forced reliably     | Inject lifecycle loss events and document limits of the simulation                      |
+| Long tests are flaky from thermal state   | Record clocks/power context when possible and distinguish correctness from timing gates |
+| Apparent memory growth is browser caching | Track owned resources and repeat rebuild baselines before declaring a leak              |

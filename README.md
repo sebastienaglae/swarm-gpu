@@ -27,18 +27,18 @@ GPU simulation -> frustum culling -> LOD classification
 
 ## Delivery phases
 
-| Phase | Outcome | Exit gate |
-|---|---|---|
-| [00 — Product contract](docs/phases/00-product-contract.md) | Scope, metrics, constraints, and public-repository standards are frozen | Project charter approved |
-| [01 — Project foundation](docs/phases/01-project-foundation.md) | Toolchain, CI, application shell, and WebGPU capability flow work | Clean CI and usable unsupported-device screen |
-| [02 — Renderer baseline](docs/phases/02-renderer-baseline.md) | Camera, mesh, depth, resize, and direct instancing render correctly | 100,000 static instances render reliably |
-| [03 — GPU simulation](docs/phases/03-gpu-simulation.md) | Compute-driven motion with ping-pong state and interaction | 500,000 stable simulated instances |
-| [04 — GPU culling and compaction](docs/phases/04-gpu-culling-compaction.md) | Visibility remains GPU-resident and feeds indirect rendering | Zero-readback indirect draw is correct |
-| [05 — GPU LOD and visual system](docs/phases/05-gpu-lod-visuals.md) | Three GPU-selected LODs and a polished swarm scene | Stable transitions and at most three swarm draws |
-| [06 — Performance and observability](docs/phases/06-performance-observability.md) | Profiling, timestamps, dynamic resolution, and benchmark harness | 250k/60-FPS target demonstrated reproducibly |
-| [07 — Reliability and stress](docs/phases/07-reliability-stress.md) | Recovery, lifecycle, validation, and stress scenarios are proven | Stress matrix passes without leaks or validation errors |
-| [08 — Public release and demo](docs/phases/08-public-release.md) | Documentation, media, hosted demo, and release automation are ready | Public v1.0 release is reproducible |
-| [09 — Research extensions](docs/phases/09-research-extensions.md) | Optional experiments are isolated from the v1 core | Each experiment has evidence and can be removed cleanly |
+| Phase                                                                             | Outcome                                                                 | Exit gate                                               |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
+| [00 — Product contract](docs/phases/00-product-contract.md)                       | Scope, metrics, constraints, and public-repository standards are frozen | Project charter approved                                |
+| [01 — Project foundation](docs/phases/01-project-foundation.md)                   | Toolchain, CI, application shell, and WebGPU capability flow work       | Clean CI and usable unsupported-device screen           |
+| [02 — Renderer baseline](docs/phases/02-renderer-baseline.md)                     | Camera, mesh, depth, resize, and direct instancing render correctly     | 100,000 static instances render reliably                |
+| [03 — GPU simulation](docs/phases/03-gpu-simulation.md)                           | Compute-driven motion with ping-pong state and interaction              | 500,000 stable simulated instances                      |
+| [04 — GPU culling and compaction](docs/phases/04-gpu-culling-compaction.md)       | Visibility remains GPU-resident and feeds indirect rendering            | Zero-readback indirect draw is correct                  |
+| [05 — GPU LOD and visual system](docs/phases/05-gpu-lod-visuals.md)               | Three GPU-selected LODs and a polished swarm scene                      | Stable transitions and at most three swarm draws        |
+| [06 — Performance and observability](docs/phases/06-performance-observability.md) | Profiling, timestamps, dynamic resolution, and benchmark harness        | 250k/60-FPS target demonstrated reproducibly            |
+| [07 — Reliability and stress](docs/phases/07-reliability-stress.md)               | Recovery, lifecycle, validation, and stress scenarios are proven        | Stress matrix passes without leaks or validation errors |
+| [08 — Public release and demo](docs/phases/08-public-release.md)                  | Documentation, media, hosted demo, and release automation are ready     | Public v1.0 release is reproducible                     |
+| [09 — Research extensions](docs/phases/09-research-extensions.md)                 | Optional experiments are isolated from the v1 core                      | Each experiment has evidence and can be removed cleanly |
 
 ## How work is governed
 

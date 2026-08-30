@@ -131,16 +131,16 @@ Every committed benchmark scenario declares:
 
 Each v1 capability has one primary implementation phase. Later phases may test or document it but do not own a duplicate implementation.
 
-| Capability | Owning phase |
-|---|---|
-| Toolchain, CI, capability negotiation, unsupported UI, device lifecycle | Phase 01 |
-| Camera, mesh, depth, resize, static instancing, basic overlay | Phase 02 |
-| GPU motion, ping-pong state, deterministic reset, pointer attract/repel | Phase 03 |
-| Frustum culling, visible-ID compaction, indirect argument generation/draw | Phase 04 |
-| Three LOD representations, GPU classification, final visual language | Phase 05 |
-| GPU timing, benchmark runner, allocation audit, dynamic resolution, optimization | Phase 06 |
-| Input/bounds hardening, recovery qualification, automated stress matrix | Phase 07 |
-| Public README, media, hosted demo, release qualification and v1.0 tag | Phase 08 |
+| Capability                                                                       | Owning phase |
+| -------------------------------------------------------------------------------- | ------------ |
+| Toolchain, CI, capability negotiation, unsupported UI, device lifecycle          | Phase 01     |
+| Camera, mesh, depth, resize, static instancing, basic overlay                    | Phase 02     |
+| GPU motion, ping-pong state, deterministic reset, pointer attract/repel          | Phase 03     |
+| Frustum culling, visible-ID compaction, indirect argument generation/draw        | Phase 04     |
+| Three LOD representations, GPU classification, final visual language             | Phase 05     |
+| GPU timing, benchmark runner, allocation audit, dynamic resolution, optimization | Phase 06     |
+| Input/bounds hardening, recovery qualification, automated stress matrix          | Phase 07     |
+| Public README, media, hosted demo, release qualification and v1.0 tag            | Phase 08     |
 
 Phase 09 owns post-v1 experiments only; it contains no required v1 capability.
 
@@ -167,9 +167,9 @@ Runtime WebGPU adapter identity, features, and limits remain pending by design. 
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| One-million headline drives unsafe defaults | Select defaults from validated limits and maintain 250k as the primary gate |
-| Browser implementations differ | Capture adapter capabilities and test stable Chrome/Edge plus another implementation when viable |
-| Metrics become UI decoration rather than evidence | Separate live approximate overlay from controlled benchmark reports |
-| Scope grows into a game engine | Reject work not required by the fixed pipeline or move it to Phase 09 |
+| Risk                                              | Mitigation                                                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| One-million headline drives unsafe defaults       | Select defaults from validated limits and maintain 250k as the primary gate                      |
+| Browser implementations differ                    | Capture adapter capabilities and test stable Chrome/Edge plus another implementation when viable |
+| Metrics become UI decoration rather than evidence | Separate live approximate overlay from controlled benchmark reports                              |
+| Scope grows into a game engine                    | Reject work not required by the fixed pipeline or move it to Phase 09                            |

@@ -88,10 +88,9 @@ Every atomic append checks destination capacity. Correctness must not depend on 
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                     | Mitigation                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Atomic append bottlenecks when all instances are visible | Measure first; consider workgroup compaction/prefix scan only as evidence-driven follow-up |
-| Plane convention silently culls everything | Share tested extraction fixtures and retain direct reference mode |
-| Visible-count overlay introduces hidden synchronization | Disable periodic readback during measurements and disclose its cadence |
-| Capacity partition wastes memory | Start simple, document cost, optimize only after profiling |
-
+| Plane convention silently culls everything               | Share tested extraction fixtures and retain direct reference mode                          |
+| Visible-count overlay introduces hidden synchronization  | Disable periodic readback during measurements and disclose its cadence                     |
+| Capacity partition wastes memory                         | Start simple, document cost, optimize only after profiling                                 |

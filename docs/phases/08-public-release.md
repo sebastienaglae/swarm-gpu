@@ -82,10 +82,9 @@ The README must distinguish measured results from targets. Replace every placeho
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Marketing claim exceeds evidence | Generate tables from committed reports where possible and review each headline number |
-| Hosted environment differs from local preview | Test the exact deployed artifact and base path |
-| Large media harms initial load | Use poster/thumbnail, lazy media, and optimized encodes |
-| Public history exposes secrets or private paths | Run release audit before first push and avoid committing sensitive data at any stage |
-
+| Risk                                            | Mitigation                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Marketing claim exceeds evidence                | Generate tables from committed reports where possible and review each headline number |
+| Hosted environment differs from local preview   | Test the exact deployed artifact and base path                                        |
+| Large media harms initial load                  | Use poster/thumbnail, lazy media, and optimized encodes                               |
+| Public history exposes secrets or private paths | Run release audit before first push and avoid committing sensitive data at any stage  |

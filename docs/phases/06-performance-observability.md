@@ -68,14 +68,14 @@ Apply one change at a time and keep before/after evidence:
 
 ## Required benchmark scenarios
 
-| ID | Population | Visibility | Resolution | Purpose |
-|---|---:|---:|---:|---|
-| STATIC-100K | 100k | 100% | 1920×1080 | Renderer baseline |
-| SIM-250K | 250k | 100% | 1920×1080 | Simulation bandwidth |
-| CULL-1M-10 | 1m | ~10% | 1920×1080 | Culling benefit |
-| CULL-1M-100 | 1m | 100% | 1920×1080 | Atomic worst case |
-| LOD-500K | 500k | mixed | 1920×1080 | Representative showcase |
-| SCALE-500K | 500k | mixed | 1280×720 to native | Raster sensitivity |
+| ID          | Population | Visibility |         Resolution | Purpose                 |
+| ----------- | ---------: | ---------: | -----------------: | ----------------------- |
+| STATIC-100K |       100k |       100% |          1920×1080 | Renderer baseline       |
+| SIM-250K    |       250k |       100% |          1920×1080 | Simulation bandwidth    |
+| CULL-1M-10  |         1m |       ~10% |          1920×1080 | Culling benefit         |
+| CULL-1M-100 |         1m |       100% |          1920×1080 | Atomic worst case       |
+| LOD-500K    |       500k |      mixed |          1920×1080 | Representative showcase |
+| SCALE-500K  |       500k |      mixed | 1280×720 to native | Raster sensitivity      |
 
 If hardware capacity rejects a scenario, the report records “unsupported by validated limit/budget” rather than silently lowering the count.
 
@@ -90,10 +90,9 @@ If hardware capacity rejects a scenario, the report records “unsupported by va
 
 ## Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Timestamp support/behavior varies | Feature-detect, isolate timing code, retain CPU/frame fallback |
-| Benchmark noise creates false wins | Warm up, use sufficient samples, report percentiles and environment |
-| DevTools alters timing | Use exported in-app benchmark for claims and DevTools for diagnosis only |
-| Optimization harms correctness | Run deterministic visual/data references after each layout or shader change |
-
+| Risk                               | Mitigation                                                                  |
+| ---------------------------------- | --------------------------------------------------------------------------- |
+| Timestamp support/behavior varies  | Feature-detect, isolate timing code, retain CPU/frame fallback              |
+| Benchmark noise creates false wins | Warm up, use sufficient samples, report percentiles and environment         |
+| DevTools alters timing             | Use exported in-app benchmark for claims and DevTools for diagnosis only    |
+| Optimization harms correctness     | Run deterministic visual/data references after each layout or shader change |
