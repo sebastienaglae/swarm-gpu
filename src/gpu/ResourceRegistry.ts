@@ -7,6 +7,18 @@ interface ResourceEntry {
   readonly resource: DestroyableResource;
 }
 
+export interface ResourceRegistrySnapshot {
+  readonly created: number;
+  readonly destroyed: number;
+  readonly active: number;
+}
+
+const counters = { created: 0, destroyed: 0, active: 0 };
+
+export function captureResourceRegistrySnapshot(): ResourceRegistrySnapshot {
+  return { ...counters };
+}
+
 export class ResourceRegistry {
   readonly #entries: ResourceEntry[] = [];
   #destroyed = false;
@@ -18,6 +30,8 @@ export class ResourceRegistry {
   public register<T extends DestroyableResource>(resource: T, label: string): T {
     if (this.#destroyed) throw new Error('Cannot register a resource after registry destruction');
     this.#entries.push({ resource, label });
+    counters.created += 1;
+    counters.active += 1;
     return resource;
   }
 
@@ -31,6 +45,9 @@ export class ResourceRegistry {
         entry.resource.destroy();
       } catch (error) {
         onError?.(entry.label, error);
+      } finally {
+        counters.destroyed += 1;
+        counters.active -= 1;
       }
     }
     this.#entries.length = 0;

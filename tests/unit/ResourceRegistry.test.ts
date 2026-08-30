@@ -1,4 +1,4 @@
-import { ResourceRegistry } from '../../src/gpu/ResourceRegistry';
+import { captureResourceRegistrySnapshot, ResourceRegistry } from '../../src/gpu/ResourceRegistry';
 
 describe('ResourceRegistry', () => {
   it('destroys resources in reverse registration order exactly once', () => {
@@ -37,5 +37,18 @@ describe('ResourceRegistry', () => {
     expect(() => registry.register({ destroy: vi.fn() }, 'late')).toThrow(
       'Cannot register a resource after registry destruction',
     );
+  });
+
+  it('tracks balanced resource ownership across rebuilds', () => {
+    const before = captureResourceRegistrySnapshot();
+    const registry = new ResourceRegistry();
+    registry.register({ destroy: vi.fn() }, 'buffer');
+    registry.register({ destroy: vi.fn() }, 'texture');
+    expect(captureResourceRegistrySnapshot().active).toBe(before.active + 2);
+    registry.destroyAll();
+    const after = captureResourceRegistrySnapshot();
+    expect(after.active).toBe(before.active);
+    expect(after.created - before.created).toBe(2);
+    expect(after.destroyed - before.destroyed).toBe(2);
   });
 });

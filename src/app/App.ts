@@ -6,7 +6,8 @@ import type { CanvasSize } from '../gpu/canvasSize';
 import { computeCanvasSize } from '../gpu/canvasSize';
 import { createGpuContext, type GpuContext } from '../gpu/createGpuContext';
 import { toUserFacingError } from '../gpu/GpuError';
-import { ResourceRegistry } from '../gpu/ResourceRegistry';
+import { clampFinite } from '../gpu/GpuValidation';
+import { captureResourceRegistrySnapshot, ResourceRegistry } from '../gpu/ResourceRegistry';
 import { InputState } from '../input/InputState';
 import { OrbitCamera } from '../renderer/OrbitCamera';
 import { DRONE_BOUNDING_RADIUS } from '../renderer/DroneMesh';
@@ -179,7 +180,12 @@ export class App {
         Number(this.#interactionStrength.value),
         hasAttractor,
       );
-      this.#simulationFrame.attractorRadius = Number(this.#interactionRadius.value);
+      this.#simulationFrame.attractorRadius = clampFinite(
+        Number(this.#interactionRadius.value),
+        1,
+        80,
+        SIMULATION_DEFAULTS.attractorRadius,
+      );
       this.#lastCpuUpdateMs = performance.now() - updateStart;
       this.#cpuUpdateSamples.record(this.#lastCpuUpdateMs);
       renderer.render(
@@ -559,6 +565,8 @@ export class App {
               estimatedStateBytes: renderer.estimatedStateBytes,
               drawCalls: renderer.drawCalls,
               computeDispatches: renderer.computeDispatches,
+              resources: captureResourceRegistrySnapshot(),
+              activeAnimationLoops: this.#frameHandle === undefined ? 0 : 1,
             },
     };
   }

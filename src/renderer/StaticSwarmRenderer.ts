@@ -14,6 +14,14 @@ import {
   LOD_VISIBLE_ID_BYTES_PER_INSTANCE,
 } from '../lod/LodModel';
 import type { CanvasSize } from '../gpu/canvasSize';
+import {
+  checkedMultiply,
+  requireSafeInteger,
+  validateBufferSize,
+  validateDispatchCount,
+  validateIndirectOffset,
+  validateMeshRange,
+} from '../gpu/GpuValidation';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import backgroundShaderSource from '../shaders/background.wgsl?raw';
 import cullShaderSource from '../shaders/cull.wgsl?raw';
@@ -244,7 +252,13 @@ export class StaticSwarmRenderer {
     requestedWorkgroupSize = SIMULATION_WORKGROUP_SIZE,
     indirectRendering = true,
   ): Promise<StaticSwarmRenderer> {
-    const capacity = Math.max(1, Math.min(STATIC_RENDERER_MAX_INSTANCES, requestedCapacity));
+    requireSafeInteger(requestedCapacity, 'Renderer capacity', 1);
+    if (requestedCapacity > STATIC_RENDERER_MAX_INSTANCES) {
+      throw new RangeError(
+        `Renderer capacity ${String(requestedCapacity)} exceeds project limit ${String(STATIC_RENDERER_MAX_INSTANCES)}`,
+      );
+    }
+    const capacity = requestedCapacity;
     const createdBuffers: GPUBuffer[] = [];
     const workgroupSize = requestedWorkgroupSize === 256 ? 256 : SIMULATION_WORKGROUP_SIZE;
     if (
@@ -253,11 +267,28 @@ export class StaticSwarmRenderer {
     ) {
       throw new RangeError(`Workgroup size ${String(workgroupSize)} exceeds device limits`);
     }
+    const dispatchCount = Math.ceil(capacity / workgroupSize);
+    validateDispatchCount(
+      dispatchCount,
+      device.limits.maxComputeWorkgroupsPerDimension,
+      'Renderer capacity',
+    );
+    for (const range of LOD_MESH_RANGES) {
+      validateMeshRange(
+        range,
+        LOD_INDICES.length,
+        LOD_VERTICES.length / (LOD_VERTEX_STRIDE / Float32Array.BYTES_PER_ELEMENT),
+      );
+    }
+    for (let lod = 0; lod < LOD_COUNT; lod += 1) {
+      validateIndirectOffset(lod * LOD_INDIRECT_STRIDE_BYTES, LOD_INDIRECT_BYTES);
+    }
     device.pushErrorScope('validation');
     let scopePopped = false;
     try {
       const createBuffer = (label: string, size: number, usage: GPUBufferUsageFlags): GPUBuffer => {
-        const buffer = device.createBuffer({ label, size, usage });
+        const safeSize = validateBufferSize(size, device.limits.maxBufferSize, label);
+        const buffer = device.createBuffer({ label, size: safeSize, usage });
         createdBuffers.push(buffer);
         return buffer;
       };
@@ -278,25 +309,25 @@ export class StaticSwarmRenderer {
       );
       const appearanceBuffer = createBuffer(
         'Immutable appearance and seeds',
-        capacity * APPEARANCE_BYTES_PER_INSTANCE,
+        checkedMultiply(capacity, APPEARANCE_BYTES_PER_INSTANCE, 'Appearance buffer'),
         GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       );
       const createState = (suffix: string): MutableStateBuffers => ({
         positions: createBuffer(
           `Positions ${suffix}`,
-          capacity * POSITION_BYTES_PER_INSTANCE,
+          checkedMultiply(capacity, POSITION_BYTES_PER_INSTANCE, 'Position buffer'),
           GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
         ),
         velocities: createBuffer(
           `Velocities ${suffix}`,
-          capacity * VELOCITY_BYTES_PER_INSTANCE,
+          checkedMultiply(capacity, VELOCITY_BYTES_PER_INSTANCE, 'Velocity buffer'),
           GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
         ),
       });
       const stateBuffers = [createState('A'), createState('B')] as const;
       const visibleIdsBuffer = createBuffer(
         'Compacted visible instance IDs',
-        capacity * LOD_VISIBLE_ID_BYTES_PER_INSTANCE,
+        checkedMultiply(capacity, LOD_VISIBLE_ID_BYTES_PER_INSTANCE, 'Visible ID buffer'),
         GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
       );
       const visibilityCounterBuffer = createBuffer(
@@ -660,7 +691,13 @@ export class StaticSwarmRenderer {
   ): void {
     if (this.#destroyed || this.#depthTexture === undefined) return;
     const start = performance.now();
-    const safeInstanceCount = Math.min(this.capacity, Math.max(0, Math.floor(instanceCount)));
+    requireSafeInteger(instanceCount, 'Render instance count');
+    if (instanceCount > this.capacity) {
+      throw new RangeError(
+        `Render instance count ${String(instanceCount)} exceeds capacity ${String(this.capacity)}`,
+      );
+    }
+    const safeInstanceCount = instanceCount;
     writeGlobalUniforms(
       this.#uniformStaging,
       camera,
