@@ -72,3 +72,11 @@ The planned three-list layout is now realized: 12 visible-ID bytes per capacity 
 `capacity × 92 + 108` bytes, or 92,000,108 bytes (87.74 MiB) at one million capacity. The three
 lists deliberately reserve full capacity independently to make every classification distribution
 overflow-safe without CPU intervention.
+
+## Phase 06 telemetry allocation
+
+Telemetry adds three persistent readback slots. Each slot owns a 48-byte timestamp resolve buffer,
+a 48-byte timestamp readback buffer, and a 48-byte counter readback buffer: 432 tracked bytes total,
+plus the implementation-owned query set. Fixed 512-value JavaScript sample rings do not consume GPU
+memory. Dynamic resolution reuses the swap-chain color target and recreates only the existing depth
+attachment, so it does not add an owned full-resolution color texture.

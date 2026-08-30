@@ -2,22 +2,23 @@
 
 SwarmGPU is a raw WebGPU renderer designed to simulate, cull, classify, compact, and draw up to one million simple objects on the GPU. The CPU only updates frame-level parameters and encodes commands; it never iterates over individual instances.
 
-Phases 00–05 are implemented. The renderer currently runs GPU simulation, conservative frustum
+Phases 00–06 are implemented. The renderer currently runs GPU simulation, conservative frustum
 culling, projected-size LOD classification, capacity-safe compaction, three GPU-generated indirect
-draws, and a polished swarm scene without interactive GPU readback. The phase documents below remain
+draws, delayed asynchronous GPU telemetry, and stable dynamic resolution without synchronous GPU
+readback. The phase documents below remain
 the project source of truth: implementation work must satisfy the corresponding acceptance criteria
 and retain evidence.
 
-Reference Phase 05 result (`nvidia turing`, Chrome headless, Windows 11, 1280×720):
+Reference Phase 06 target result (`nvidia turing`, Chrome headless, Windows, 1920×1080):
 
 ```text
-Instances       1,000,000
-LOD counts      24,702 / 812,333 / 133,884
+Instances       250,000
 Swarm draws     3 indirect
-CPU frame       0.3 ms median
-GPU frame       4.456 ms median
-Readbacks       0/interactive frame
-State memory    87.74 MiB tracked
+Frame interval  16.7 ms median / 16.9 ms p95
+CPU encode      0.3 ms median (including submit)
+GPU frame       2.621 ms median (delayed timestamps)
+Readbacks       0 blocking/frame
+State memory    21.93 MiB tracked
 ```
 
 ## Target pipeline
@@ -107,6 +108,10 @@ when Chromium is not already present.
 Use the in-app LOD controls in development builds to force a representation, adjust projected-size
 thresholds, or enable classification colors. `?direct=1` retains the Phase 04 direct-draw reference;
 benchmark and capture scripts live under `scripts/`.
+
+Phase 06 methodology, raw reports, rerun variance, and optimization decisions are documented in the
+[performance evidence](docs/evidence/phase-06/README.md). Run the committed regression budgets with
+`npm run benchmark:budgets`.
 
 ## Definition of a trustworthy performance claim
 

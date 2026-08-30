@@ -26,23 +26,23 @@ GPU query resolve/copy/map is asynchronous and delayed. It must use a ring of re
 
 ### Instrumentation
 
-- [ ] Add timestamp-query capability path with labeled pass boundaries.
-- [ ] Use a multi-frame resolve/readback ring and consume only completed results.
-- [ ] Handle timestamp period/units according to current API behavior and verify with known workload changes.
-- [ ] Maintain rolling fixed-size numeric samples without per-frame array growth.
-- [ ] Calculate median/p95/p99 outside hot frames or at low cadence.
-- [ ] Expose CPU/GPU/pass times, FPS, draw count, population, delayed visible/LOD counts, render scale, and memory estimate.
-- [ ] Provide a diagnostics export that includes feature availability and warns about approximate metrics.
+- [x] Add timestamp-query capability path with labeled pass boundaries.
+- [x] Use a multi-frame resolve/readback ring and consume only completed results.
+- [x] Handle timestamp period/units according to current API behavior and verify with known workload changes.
+- [x] Maintain rolling fixed-size numeric samples without per-frame array growth.
+- [x] Calculate median/p95/p99 outside hot frames or at low cadence.
+- [x] Expose CPU/GPU/pass times, FPS, draw count, population, delayed visible/LOD counts, render scale, and memory estimate.
+- [x] Provide a diagnostics export that includes feature availability and warns about approximate metrics.
 
 ### Deterministic benchmark runner
 
-- [ ] Define versioned JSON scenario and result schemas.
-- [ ] Fix PRNG seed, timestep, camera path, input, canvas resolution, render scale, duration, and population.
-- [ ] Separate loading/compilation, warm-up, measurement, and post-measurement readback stages.
-- [ ] Disable or throttle overlay, devtools-dependent instrumentation, and capture effects during measurement.
-- [ ] Export raw samples or histograms plus summary statistics and environment metadata.
-- [ ] Reject headline comparison when scenario/schema versions differ.
-- [ ] Add documented local commands for smoke and full benchmark suites.
+- [x] Define versioned JSON scenario and result schemas.
+- [x] Fix PRNG seed, timestep, camera path, input, canvas resolution, render scale, duration, and population.
+- [x] Separate loading/compilation, warm-up, measurement, and post-measurement readback stages.
+- [x] Disable or throttle overlay, devtools-dependent instrumentation, and capture effects during measurement.
+- [x] Export raw samples or histograms plus summary statistics and environment metadata.
+- [x] Reject headline comparison when scenario/schema versions differ.
+- [x] Add documented local commands for smoke and full benchmark suites.
 
 ### Optimization sequence
 
@@ -60,11 +60,11 @@ Apply one change at a time and keep before/after evidence:
 
 ### Dynamic resolution
 
-- [ ] Use GPU timing when available, otherwise a conservative frame-interval signal.
-- [ ] Change scale slowly after a sustained window, not in response to individual frames.
-- [ ] Quantize changes to avoid texture churn; recreate size-dependent attachments only when scale changes.
-- [ ] Exclude UI resolution where practical and report internal versus display resolution.
-- [ ] Disable adaptation in deterministic benchmarks unless the scenario explicitly tests it.
+- [x] Use GPU timing when available, otherwise a conservative frame-interval signal.
+- [x] Change scale slowly after a sustained window, not in response to individual frames.
+- [x] Quantize changes to avoid texture churn; recreate size-dependent attachments only when scale changes.
+- [x] Exclude UI resolution where practical and report internal versus display resolution.
+- [x] Disable adaptation in deterministic benchmarks unless the scenario explicitly tests it.
 
 ## Required benchmark scenarios
 
