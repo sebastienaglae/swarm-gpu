@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienaglae/swarm-gpu/blob/main/benchmarks/schemas/phase-06-result.schema.json",
+  "title": "SwarmGPU Phase 06 benchmark result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scenario",
+    "source",
+    "environment",
+    "stages",
+    "samples",
+    "summary",
+    "postMeasurement"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "scenario": { "$ref": "phase-06-scenario.schema.json" },
+    "source": {
+      "type": "object",
+      "required": ["commit", "dirty"],
+      "properties": { "commit": { "type": "string" }, "dirty": { "const": false } }
+    },
+    "environment": { "type": "object" },
+    "stages": { "type": "object" },
+    "samples": { "type": "object" },
+    "summary": { "type": "object" },
+    "postMeasurement": { "type": "object" }
+  }
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "SIM-250K-SMOKE",
+    "population": 250000,
+    "visibilityPercent": 100,
+    "width": 1280,
+    "height": 720,
+    "renderScale": 1,
+    "durationSeconds": 3,
+    "warmupSeconds": 2,
+    "seed": 1511508451,
+    "fixedTimestepSeconds": 0.016666666666666666,
+    "cameraPath": "default-orbit-static-v1",
+    "input": "disabled",
+    "lodMode": "auto",
+    "workgroupSize": 128
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "LOD-500K-SMOKE",
+    "population": 500000,
+    "visibilityPercent": 100,
+    "width": 1280,
+    "height": 720,
+    "renderScale": 1,
+    "durationSeconds": 3,
+    "warmupSeconds": 2,
+    "seed": 1511508451,
+    "fixedTimestepSeconds": 0.016666666666666666,
+    "cameraPath": "default-orbit-static-v1",
+    "input": "disabled",
+    "lodMode": "auto",
+    "workgroupSize": 128
+  }
+]

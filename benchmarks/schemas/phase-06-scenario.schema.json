@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienaglae/swarm-gpu/blob/main/benchmarks/schemas/phase-06-scenario.schema.json",
+  "title": "SwarmGPU Phase 06 benchmark scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenarioVersion",
+    "id",
+    "population",
+    "visibilityPercent",
+    "width",
+    "height",
+    "renderScale",
+    "durationSeconds",
+    "warmupSeconds",
+    "seed",
+    "fixedTimestepSeconds",
+    "cameraPath",
+    "input",
+    "lodMode",
+    "workgroupSize"
+  ],
+  "properties": {
+    "scenarioVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "minLength": 1 },
+    "population": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "visibilityPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "renderScale": { "type": "number", "minimum": 0.5, "maximum": 1 },
+    "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+    "warmupSeconds": { "type": "number", "minimum": 0 },
+    "seed": { "type": "integer" },
+    "fixedTimestepSeconds": { "type": "number", "exclusiveMinimum": 0 },
+    "cameraPath": { "const": "default-orbit-static-v1" },
+    "input": { "const": "disabled" },
+    "lodMode": { "enum": ["auto", "near-only"] },
+    "workgroupSize": { "enum": [128, 256] }
+  }
+}

@@ -488,6 +488,17 @@ export class App {
     this.#renderer?.resetPerformanceSamples();
   }
 
+  public beginBenchmarkMeasurementForDevelopment(): void {
+    if (!import.meta.env.DEV) throw new Error('Benchmark controls are development-only');
+    this.resetPerformanceSamples();
+    this.#diagnostics.hide();
+  }
+
+  public endBenchmarkMeasurementForDevelopment(): void {
+    if (!import.meta.env.DEV) throw new Error('Benchmark controls are development-only');
+    this.#diagnostics.show();
+  }
+
   public capturePerformanceSamples(): {
     readonly frameIntervalMs: number[];
     readonly cpuFrameMs: number[];

@@ -114,7 +114,7 @@ export class DiagnosticsOverlay {
     this.#cpu.value = `${Math.max(0, cpuFrameMs - submitMs).toFixed(2)} ms`;
     this.#submit.value = `${submitMs.toFixed(3)} ms`;
     this.#renderScale.value = `${String(Math.round(renderScale * 100))}%`;
-    if (telemetry === undefined || !telemetry.available) return;
+    if (!telemetry?.available) return;
     this.#visible.value = `${telemetry.lodCounts.reduce((sum, count) => sum + count, 0).toLocaleString('en-US')} delayed`;
     this.#lod.value = `${telemetry.lodCounts.join(' / ')} (${String(telemetry.delayedFrames)}f)`;
     this.#gpuPasses.value = `${telemetry.simulationMs.toFixed(2)} / ${telemetry.cullingMs.toFixed(2)} / ${telemetry.renderMs.toFixed(2)} ms`;
