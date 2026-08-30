@@ -33,6 +33,10 @@ export class InputState {
     this.pointer[3] = -1;
     this.pointer[4] = 0;
   };
+  readonly #onPointerCancel = (event: PointerEvent): void => {
+    this.#onPointerUp(event);
+    this.pointer[4] = 0;
+  };
   readonly #onPointerEnter = (): void => {
     this.pointer[4] = 1;
   };
@@ -50,7 +54,7 @@ export class InputState {
     canvas.addEventListener('pointermove', this.#onPointerMove);
     canvas.addEventListener('pointerdown', this.#onPointerDown);
     canvas.addEventListener('pointerup', this.#onPointerUp);
-    canvas.addEventListener('pointercancel', this.#onPointerUp);
+    canvas.addEventListener('pointercancel', this.#onPointerCancel);
     canvas.addEventListener('lostpointercapture', this.#onLostPointerCapture);
     canvas.addEventListener('pointerenter', this.#onPointerEnter);
     canvas.addEventListener('pointerleave', this.#onPointerLeave);
@@ -63,7 +67,7 @@ export class InputState {
     canvas.removeEventListener('pointermove', this.#onPointerMove);
     canvas.removeEventListener('pointerdown', this.#onPointerDown);
     canvas.removeEventListener('pointerup', this.#onPointerUp);
-    canvas.removeEventListener('pointercancel', this.#onPointerUp);
+    canvas.removeEventListener('pointercancel', this.#onPointerCancel);
     canvas.removeEventListener('lostpointercapture', this.#onLostPointerCapture);
     canvas.removeEventListener('pointerenter', this.#onPointerEnter);
     canvas.removeEventListener('pointerleave', this.#onPointerLeave);

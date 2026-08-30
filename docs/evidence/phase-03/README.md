@@ -6,6 +6,7 @@ Captured on 2026-08-30 in installed Chrome on the reference Windows 11 / NVIDIA 
 
 - Chrome compiled and executed `simulate.wgsl` without validation errors.
 - `scripts/validate-phase-03.mjs` resets the renderer while paused, advances exactly one fixed 1/60-second compute step, reads 16 fixtures explicitly, and compares position/velocity against the CPU reference. Maximum absolute error was `0.0000016843660475274191`, below the `0.0001` gate.
+- The same dedicated run injects one NaN/infinite state while paused and records `recoveredCount: 1`; the normal frame loop has no recovery readback or counter.
 - Unit fixtures cover center/zero velocity, boundary containment, extreme delta, speed clamping, NaN/infinity recovery, deterministic recovery, and all interaction signs.
 - Browser lifecycle coverage verifies one compute dispatch per frame, pause freeze, population changes, reset, resize, scene recreation, and device-loss recovery.
 

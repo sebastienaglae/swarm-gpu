@@ -18,6 +18,9 @@ const comparison = await page.evaluate(() =>
 const gpuTiming = await page.evaluate(() =>
   Reflect.get(globalThis, '__SWARM_GPU_APP__').measureGpuFrameForDevelopment(),
 );
+const recovery = await page.evaluate(() =>
+  Reflect.get(globalThis, '__SWARM_GPU_APP__').runFiniteRecoveryDiagnosticForDevelopment(),
+);
 if (errors.length > 0) throw new Error(errors.join('\n'));
 if (comparison.fixtureCount !== 16 || comparison.maxAbsoluteError > 0.0001) {
   throw new Error(`Shader comparison exceeded tolerance: ${JSON.stringify(comparison)}`);
@@ -25,5 +28,8 @@ if (comparison.fixtureCount !== 16 || comparison.maxAbsoluteError > 0.0001) {
 if (![gpuTiming.computeMs, gpuTiming.renderMs, gpuTiming.totalMs].every(Number.isFinite)) {
   throw new Error(`GPU timing was invalid: ${JSON.stringify(gpuTiming)}`);
 }
-process.stdout.write(`${JSON.stringify({ comparison, gpuTiming }, null, 2)}\n`);
+if (recovery.injectedCount !== 1 || recovery.recoveredCount !== 1) {
+  throw new Error(`Finite recovery diagnostic failed: ${JSON.stringify(recovery)}`);
+}
+process.stdout.write(`${JSON.stringify({ comparison, recovery, gpuTiming }, null, 2)}\n`);
 await browser.close();

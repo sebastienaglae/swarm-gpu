@@ -466,6 +466,39 @@ export class App {
     );
   }
 
+  public async runFiniteRecoveryDiagnosticForDevelopment(): Promise<{
+    readonly injectedCount: number;
+    readonly recoveredCount: number;
+  }> {
+    const renderer = this.#renderer;
+    const gpu = this.#gpu;
+    if (
+      !import.meta.env.DEV ||
+      this.state.current !== 'paused' ||
+      renderer === undefined ||
+      gpu === undefined ||
+      !this.#canvasSize.drawable
+    ) {
+      throw new Error('Recovery diagnostics are available only in development while paused');
+    }
+    renderer.resetSimulation();
+    renderer.injectInvalidFixtureForDevelopment();
+    this.#simulationFrame.deltaSeconds = FIXED_BENCHMARK_DELTA_SECONDS;
+    this.#simulationFrame.attractorStrength = 0;
+    renderer.render(
+      gpu.canvasContext,
+      this.#camera,
+      this.#simulationFrame,
+      this.#canvasSize.width,
+      this.#canvasSize.height,
+      1,
+      window.devicePixelRatio,
+    );
+    const recovered = await renderer.captureSimulationState(1);
+    const isFinite = [...recovered.positions, ...recovered.velocities].every(Number.isFinite);
+    return { injectedCount: 1, recoveredCount: isFinite ? 1 : 0 };
+  }
+
   public dispose(): void {
     if (this.state.current === 'disposed') return;
     this.#generation += 1;

@@ -515,6 +515,17 @@ export class StaticSwarmRenderer {
     this.#stateParity = 0;
   }
 
+  public injectInvalidFixtureForDevelopment(): void {
+    if (!import.meta.env.DEV || this.#destroyed) {
+      throw new Error('Invalid-state injection is available only in development');
+    }
+    const invalidPosition = new Float32Array([Number.NaN, 0, 0, 0.24]);
+    const invalidVelocity = new Float32Array([Number.POSITIVE_INFINITY, 0, 0, 0]);
+    const state = this.#stateBuffers[this.#stateParity];
+    this.#device.queue.writeBuffer(state.positions, 0, invalidPosition);
+    this.#device.queue.writeBuffer(state.velocities, 0, invalidVelocity);
+  }
+
   public async captureSimulationState(instanceCount: number): Promise<SimulationStateCapture> {
     if (this.#destroyed) throw new Error('Cannot inspect a destroyed renderer');
     const count = Math.min(this.capacity, Math.max(0, Math.floor(instanceCount)));

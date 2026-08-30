@@ -230,7 +230,8 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_COMPUTE_DISPATCH_COUNT__')))
     .toBeGreaterThan(0);
-  await page.mouse.move(450, 300);
+  await page.locator('#gpu-canvas').dispatchEvent('pointerenter');
+  await page.mouse.move(451, 301);
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
     .toBeGreaterThan(0);
@@ -239,6 +240,18 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
     .toBeLessThan(0);
   await page.locator('#gpu-canvas').dispatchEvent('pointerleave');
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
+    .toBe(0);
+  await page.locator('#gpu-canvas').dispatchEvent('pointerenter');
+  await page.mouse.move(452, 302);
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
+    .toBeLessThan(0);
+  await page.locator('#gpu-canvas').dispatchEvent('pointercancel', {
+    pointerId: 1,
+    button: 0,
+  });
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
     .toBe(0);
