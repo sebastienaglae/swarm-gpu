@@ -201,6 +201,11 @@ export class StaticSwarmRenderer {
             targets: [{ format: canvasFormat }],
           },
           primitive: { topology: 'triangle-list' },
+          depthStencil: {
+            format: DEPTH_FORMAT,
+            depthWriteEnabled: false,
+            depthCompare: 'always',
+          },
         }),
         device.createRenderPipelineAsync({
           label: 'Static swarm pipeline',
