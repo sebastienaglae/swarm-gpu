@@ -26,8 +26,23 @@
         <div><span>Canvas</span><output id="metric-canvas">0 × 0</output></div>
         <div><span>Max instances</span><output id="metric-capacity">—</output></div>
         <div><span>Timestamp query</span><output id="metric-timestamp">—</output></div>
+        <div><span>Instances</span><output id="metric-instances">—</output></div>
+        <div><span>Triangles</span><output id="metric-triangles">—</output></div>
+        <div><span>Draw calls</span><output id="metric-draws">—</output></div>
+        <div><span>FPS</span><output id="metric-fps">—</output></div>
+        <div><span>Frame interval</span><output id="metric-frame">—</output></div>
+        <div><span>CPU encode + submit</span><output id="metric-cpu">—</output></div>
+        <div><span>GPU frame</span><output id="metric-gpu">not measured</output></div>
       </aside>
       <nav id="controls" class="controls" aria-label="Renderer lifecycle" hidden>
+        <label>
+          Population
+          <select id="population-select">
+            <option value="10000">10,000</option>
+            <option value="50000">50,000</option>
+            <option value="100000" selected>100,000</option>
+          </select>
+        </label>
         <button id="pause-button" type="button">Pause</button>
         <button id="reset-button" type="button">Reset</button>
       </nav>

@@ -1,6 +1,7 @@
 import type { AppState } from '../app/AppState';
 import type { AdapterCapabilities } from '../gpu/Capabilities';
 import type { CanvasSize } from '../gpu/canvasSize';
+import type { StaticSwarmRenderer } from '../renderer/StaticSwarmRenderer';
 
 export class DiagnosticsOverlay {
   readonly #root: HTMLElement;
@@ -9,6 +10,13 @@ export class DiagnosticsOverlay {
   readonly #canvas: HTMLOutputElement;
   readonly #capacity: HTMLOutputElement;
   readonly #timestamp: HTMLOutputElement;
+  readonly #instances: HTMLOutputElement;
+  readonly #triangles: HTMLOutputElement;
+  readonly #draws: HTMLOutputElement;
+  readonly #fps: HTMLOutputElement;
+  readonly #frame: HTMLOutputElement;
+  readonly #cpu: HTMLOutputElement;
+  readonly #gpu: HTMLOutputElement;
 
   public constructor(root: HTMLElement) {
     this.#root = root;
@@ -17,6 +25,13 @@ export class DiagnosticsOverlay {
     this.#canvas = requireOutput('metric-canvas');
     this.#capacity = requireOutput('metric-capacity');
     this.#timestamp = requireOutput('metric-timestamp');
+    this.#instances = requireOutput('metric-instances');
+    this.#triangles = requireOutput('metric-triangles');
+    this.#draws = requireOutput('metric-draws');
+    this.#fps = requireOutput('metric-fps');
+    this.#frame = requireOutput('metric-frame');
+    this.#cpu = requireOutput('metric-cpu');
+    this.#gpu = requireOutput('metric-gpu');
   }
 
   public show(): void {
@@ -45,6 +60,27 @@ export class DiagnosticsOverlay {
     this.#canvas.value = size.drawable
       ? `${String(size.width)} × ${String(size.height)}`
       : 'suspended';
+  }
+
+  public setRenderer(renderer: StaticSwarmRenderer, instanceCount: number): void {
+    this.#draws.value = String(renderer.drawCalls);
+    this.#gpu.value = 'not measured (Phase 06)';
+    this.setPopulation(instanceCount, renderer.triangleCount);
+  }
+
+  public setPopulation(instanceCount: number, trianglesPerInstance: number): void {
+    this.#instances.value = instanceCount.toLocaleString('en-US');
+    this.#triangles.value = (instanceCount * trianglesPerInstance).toLocaleString('en-US');
+  }
+
+  public setFrameMetrics(
+    framesPerSecond: number,
+    frameIntervalMs: number,
+    cpuFrameMs: number,
+  ): void {
+    this.#fps.value = framesPerSecond.toFixed(1);
+    this.#frame.value = `${frameIntervalMs.toFixed(2)} ms`;
+    this.#cpu.value = `${cpuFrameMs.toFixed(2)} ms`;
   }
 }
 

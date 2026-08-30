@@ -1,9 +1,14 @@
 export class InputState {
   public readonly pointer = new Float32Array(4);
+  public readonly orbitDelta = new Float32Array(3);
   #attached = false;
   readonly #onPointerMove = (event: PointerEvent): void => {
     this.pointer[0] = event.offsetX;
     this.pointer[1] = event.offsetY;
+    if (this.pointer[2] === 1 && this.pointer[3] === 0) {
+      this.orbitDelta[0] = (this.orbitDelta[0] ?? 0) + event.movementX;
+      this.orbitDelta[1] = (this.orbitDelta[1] ?? 0) + event.movementY;
+    }
   };
   readonly #onPointerDown = (event: PointerEvent): void => {
     this.pointer[2] = 1;
@@ -22,6 +27,14 @@ export class InputState {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
   };
+  readonly #onLostPointerCapture = (): void => {
+    this.pointer[2] = 0;
+    this.pointer[3] = -1;
+  };
+  readonly #onWheel = (event: WheelEvent): void => {
+    this.orbitDelta[2] = (this.orbitDelta[2] ?? 0) + event.deltaY;
+    event.preventDefault();
+  };
 
   public attach(canvas: HTMLCanvasElement): void {
     if (this.#attached) return;
@@ -30,6 +43,8 @@ export class InputState {
     canvas.addEventListener('pointerdown', this.#onPointerDown);
     canvas.addEventListener('pointerup', this.#onPointerUp);
     canvas.addEventListener('pointercancel', this.#onPointerUp);
+    canvas.addEventListener('lostpointercapture', this.#onLostPointerCapture);
+    canvas.addEventListener('wheel', this.#onWheel, { passive: false });
   }
 
   public detach(canvas: HTMLCanvasElement): void {
@@ -39,10 +54,21 @@ export class InputState {
     canvas.removeEventListener('pointerdown', this.#onPointerDown);
     canvas.removeEventListener('pointerup', this.#onPointerUp);
     canvas.removeEventListener('pointercancel', this.#onPointerUp);
+    canvas.removeEventListener('lostpointercapture', this.#onLostPointerCapture);
+    canvas.removeEventListener('wheel', this.#onWheel);
+  }
+
+  public consumeOrbitDelta(target: Float32Array): void {
+    if (target.length < 3) throw new RangeError('orbit input target requires three floats');
+    target[0] = this.orbitDelta[0] ?? 0;
+    target[1] = this.orbitDelta[1] ?? 0;
+    target[2] = this.orbitDelta[2] ?? 0;
+    this.orbitDelta.fill(0);
   }
 
   public reset(): void {
     this.pointer.fill(0);
     this.pointer[3] = -1;
+    this.orbitDelta.fill(0);
   }
 }

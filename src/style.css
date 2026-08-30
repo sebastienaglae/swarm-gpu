@@ -86,6 +86,14 @@ button {
   cursor: pointer;
 }
 
+select {
+  padding: 0.55rem 1.8rem 0.55rem 0.7rem;
+  border: 1px solid rgb(103 232 249 / 35%);
+  border-radius: 0.55rem;
+  color: #e7fbff;
+  background: rgb(17 52 70 / 92%);
+}
+
 button:hover {
   background: rgb(24 73 95 / 95%);
 }
@@ -141,6 +149,14 @@ button:focus-visible {
   bottom: 1rem;
   display: flex;
   gap: 0.5rem;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #9db2c3;
+  font-size: 0.78rem;
 }
 
 [hidden] {

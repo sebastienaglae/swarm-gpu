@@ -5,6 +5,8 @@ import { createGpuContext, type GpuContext } from '../gpu/createGpuContext';
 import { toUserFacingError } from '../gpu/GpuError';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import { InputState } from '../input/InputState';
+import { OrbitCamera } from '../renderer/OrbitCamera';
+import { STATIC_POPULATION_PRESETS, StaticSwarmRenderer } from '../renderer/StaticSwarmRenderer';
 import { AppStateStore } from './AppState';
 
 const MAX_AUTOMATIC_RECOVERY_ATTEMPTS = 1;
@@ -24,21 +26,13 @@ export class App {
   readonly #controls: HTMLElement;
   readonly #pauseButton: HTMLButtonElement;
   readonly #resetButton: HTMLButtonElement;
+  readonly #populationSelect: HTMLSelectElement;
   readonly #input = new InputState();
-  readonly #globalUniformStaging = new Float32Array(64);
-  readonly #clearColor: GPUColorDict = { r: 0.008, g: 0.018, b: 0.035, a: 1 };
-  readonly #colorAttachment: GPURenderPassColorAttachment = {
-    view: undefined as unknown as GPUTextureView,
-    clearValue: this.#clearColor,
-    loadOp: 'clear',
-    storeOp: 'store',
-  };
-  readonly #renderPassDescriptor: GPURenderPassDescriptor = {
-    label: 'Foundation clear pass',
-    colorAttachments: [this.#colorAttachment],
-  };
+  readonly #cameraInput = new Float32Array(3);
+  readonly #camera = new OrbitCamera();
   readonly #resizeObserver: ResizeObserver;
   #gpu: GpuContext | undefined;
+  #renderer: StaticSwarmRenderer | undefined;
   #resources = new ResourceRegistry();
   #canvasSize: CanvasSize = { width: 0, height: 0, drawable: false };
   #frameHandle: number | undefined;
@@ -46,22 +40,45 @@ export class App {
   #automaticRecoveryAttempts = 0;
   #visibilityPaused = false;
   #initializedListeners = false;
+  #instanceCount = 100_000;
+  #lastFrameTimestamp = 0;
+  #smoothedFrameInterval = 16.67;
+  #lastDiagnosticsTimestamp = 0;
 
-  readonly #onFrame = (): void => {
+  readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
     if (this.state.current !== 'running') return;
 
     const gpu = this.#gpu;
-    if (gpu !== undefined && this.#canvasSize.drawable) {
-      this.#colorAttachment.view = gpu.canvasContext.getCurrentTexture().createView({
-        label: 'Current canvas view',
-      });
-      const encoder = gpu.device.createCommandEncoder({
-        label: 'Foundation frame encoder',
-      });
-      const pass = encoder.beginRenderPass(this.#renderPassDescriptor);
-      pass.end();
-      gpu.device.queue.submit([encoder.finish()]);
+    const renderer = this.#renderer;
+    if (gpu !== undefined && renderer !== undefined && this.#canvasSize.drawable) {
+      this.#input.consumeOrbitDelta(this.#cameraInput);
+      const [orbitX = 0, orbitY = 0, zoom = 0] = this.#cameraInput;
+      this.#camera.applyInput(orbitX, orbitY, zoom);
+      this.#camera.update();
+      renderer.render(
+        gpu.canvasContext,
+        this.#camera,
+        timestamp * 0.001,
+        this.#canvasSize.width,
+        this.#canvasSize.height,
+        this.#instanceCount,
+        window.devicePixelRatio,
+      );
+
+      if (this.#lastFrameTimestamp > 0) {
+        const interval = timestamp - this.#lastFrameTimestamp;
+        this.#smoothedFrameInterval += (interval - this.#smoothedFrameInterval) * 0.08;
+      }
+      this.#lastFrameTimestamp = timestamp;
+      if (timestamp - this.#lastDiagnosticsTimestamp >= 250) {
+        this.#lastDiagnosticsTimestamp = timestamp;
+        this.#diagnostics.setFrameMetrics(
+          1000 / this.#smoothedFrameInterval,
+          this.#smoothedFrameInterval,
+          renderer.lastCpuFrameMs,
+        );
+      }
     }
 
     this.#scheduleFrame();
@@ -80,6 +97,14 @@ export class App {
 
   readonly #onReset = (): void => {
     this.reset();
+  };
+
+  readonly #onPopulationChange = (): void => {
+    const selected = Number(this.#populationSelect.value);
+    const renderer = this.#renderer;
+    if (renderer === undefined || !isPopulationPreset(selected)) return;
+    this.#instanceCount = Math.min(selected, renderer.capacity);
+    this.#diagnostics.setPopulation(this.#instanceCount, renderer.triangleCount);
   };
 
   readonly #onWindowResize = (): void => {
@@ -108,6 +133,7 @@ export class App {
     this.#controls = requireElement(root, '#controls', HTMLElement);
     this.#pauseButton = requireElement(root, '#pause-button', HTMLButtonElement);
     this.#resetButton = requireElement(root, '#reset-button', HTMLButtonElement);
+    this.#populationSelect = requireElement(root, '#population-select', HTMLSelectElement);
     this.#resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry !== undefined) this.#resize(entry.contentRect.width, entry.contentRect.height);
@@ -160,7 +186,27 @@ export class App {
       this.#resources = new ResourceRegistry();
       this.#configureListeners();
       this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
+      this.#showStatus(
+        'Compiling renderer',
+        'Creating shaders, persistent buffers, bind groups, and render pipelines…',
+        false,
+      );
+      const renderer = await StaticSwarmRenderer.create(
+        gpu.device,
+        gpu.canvasFormat,
+        gpu.capabilities.capacity.maxInstances,
+      );
+      if (generation !== this.#generation) {
+        renderer.destroy();
+        return;
+      }
+      this.#renderer = this.#resources.register(renderer, 'Static swarm renderer');
+      this.#renderer.resize(this.#canvasSize);
+      this.#camera.setViewport(this.#canvasSize.width, this.#canvasSize.height);
+      this.#camera.update();
+      this.#configurePopulationPresets(renderer.capacity);
       this.#diagnostics.setCapabilities(gpu.capabilities);
+      this.#diagnostics.setRenderer(renderer, this.#instanceCount);
       this.#diagnostics.show();
       this.#controls.hidden = false;
       this.#status.panel.dataset.kind = 'ready';
@@ -170,6 +216,7 @@ export class App {
     } catch (error) {
       if (generation !== this.#generation || this.state.current === 'disposed') return;
       console.error('[SwarmGPU] Initialization failed', error);
+      this.#destroyGpuResources();
       this.state.transition('failed');
       this.#showStatus('WebGPU initialization failed', toUserFacingError(error), true);
     }
@@ -187,6 +234,7 @@ export class App {
     if (this.state.current !== 'running') return;
     this.state.transition('paused');
     this.#cancelFrame();
+    this.#lastFrameTimestamp = 0;
     this.#pauseButton.textContent = 'Resume';
   }
 
@@ -197,8 +245,9 @@ export class App {
 
   public reset(): void {
     if (this.state.current === 'disposed') return;
-    this.#globalUniformStaging.fill(0);
     this.#input.reset();
+    this.#camera.reset();
+    this.#camera.update();
   }
 
   public simulateDeviceLossForDevelopment(): void {
@@ -225,6 +274,7 @@ export class App {
     this.#resizeObserver.observe(this.#canvas);
     this.#pauseButton.addEventListener('click', this.#onPauseToggle);
     this.#resetButton.addEventListener('click', this.#onReset);
+    this.#populationSelect.addEventListener('change', this.#onPopulationChange);
     window.addEventListener('resize', this.#onWindowResize);
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
   }
@@ -236,6 +286,7 @@ export class App {
     this.#resizeObserver.disconnect();
     this.#pauseButton.removeEventListener('click', this.#onPauseToggle);
     this.#resetButton.removeEventListener('click', this.#onReset);
+    this.#populationSelect.removeEventListener('change', this.#onPopulationChange);
     window.removeEventListener('resize', this.#onWindowResize);
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
   }
@@ -248,6 +299,8 @@ export class App {
     if (!size.drawable) return;
     if (this.#canvas.width !== size.width) this.#canvas.width = size.width;
     if (this.#canvas.height !== size.height) this.#canvas.height = size.height;
+    this.#camera.setViewport(size.width, size.height);
+    this.#renderer?.resize(size);
   }
 
   #scheduleFrame(): void {
@@ -296,6 +349,7 @@ export class App {
     this.#resources.destroyAll((label, error) => {
       console.error(`[SwarmGPU] Failed to destroy ${label}`, error);
     });
+    this.#renderer = undefined;
     this.#gpu?.dispose();
     this.#gpu = undefined;
   }
@@ -306,6 +360,23 @@ export class App {
     this.#status.message.textContent = message;
     this.#status.retry.hidden = !canRetry;
   }
+
+  #configurePopulationPresets(capacity: number): void {
+    let largestSupported = 0;
+    for (const option of this.#populationSelect.options) {
+      const count = Number(option.value);
+      option.disabled = count > capacity;
+      if (!option.disabled) largestSupported = Math.max(largestSupported, count);
+    }
+    if (largestSupported === 0)
+      throw new Error('This adapter cannot render the minimum population');
+    this.#instanceCount = largestSupported;
+    this.#populationSelect.value = String(largestSupported);
+  }
+}
+
+function isPopulationPreset(value: number): value is (typeof STATIC_POPULATION_PRESETS)[number] {
+  return STATIC_POPULATION_PRESETS.some((preset) => preset === value);
 }
 
 function requireElement<T extends Element>(
