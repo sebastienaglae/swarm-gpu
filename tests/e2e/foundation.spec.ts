@@ -32,6 +32,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await page.addInitScript(() => {
     let submitCount = 0;
     let deviceRequestCount = 0;
+    let lastInstanceCount = 0;
     const noop = () => {
       return;
     };
@@ -47,14 +48,34 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
           submit: () => {
             submitCount += 1;
           },
+          writeBuffer: noop,
         },
         lost,
         addEventListener: noop,
         removeEventListener: noop,
         pushErrorScope: noop,
         popErrorScope: async () => null,
+        createBuffer: () => ({ destroy: noop }),
+        createTexture: () => ({ createView: () => ({}), destroy: noop }),
+        createBindGroupLayout: () => ({}),
+        createPipelineLayout: () => ({}),
+        createBindGroup: () => ({}),
+        createShaderModule: () => ({
+          getCompilationInfo: async () => ({ messages: [] }),
+        }),
+        createRenderPipelineAsync: async () => ({}),
         createCommandEncoder: () => ({
-          beginRenderPass: () => ({ end: noop }),
+          beginRenderPass: () => ({
+            setBindGroup: noop,
+            setPipeline: noop,
+            setVertexBuffer: noop,
+            setIndexBuffer: noop,
+            draw: noop,
+            drawIndexed: (_indices: number, instances: number) => {
+              lastInstanceCount = instances;
+            },
+            end: noop,
+          }),
           finish: () => ({}),
         }),
         destroy: () => {
@@ -102,6 +123,14 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       configurable: true,
       value: { RENDER_ATTACHMENT: 16 },
     });
+    Object.defineProperty(globalThis, 'GPUBufferUsage', {
+      configurable: true,
+      value: { COPY_DST: 8, INDEX: 16, VERTEX: 32, UNIFORM: 64, STORAGE: 128 },
+    });
+    Object.defineProperty(globalThis, 'GPUShaderStage', {
+      configurable: true,
+      value: { VERTEX: 1, FRAGMENT: 2 },
+    });
     Object.defineProperty(Navigator.prototype, 'gpu', {
       configurable: true,
       value: {
@@ -117,6 +146,10 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       configurable: true,
       get: () => deviceRequestCount,
     });
+    Object.defineProperty(globalThis, '__MOCK_LAST_INSTANCE_COUNT__', {
+      configurable: true,
+      get: () => lastInstanceCount,
+    });
   });
   await page.goto('/');
 
@@ -125,6 +158,12 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#metric-adapter')).toHaveText('Mock discrete adapter');
   await expect(page.locator('#metric-timestamp')).toHaveText('available');
   await expect(page.locator('#metric-canvas')).not.toHaveText('0 × 0');
+  await expect(page.locator('#metric-instances')).toHaveText('100,000');
+  await page.locator('#population-select').selectOption('10000');
+  await expect(page.locator('#metric-instances')).toHaveText('10,000');
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_LAST_INSTANCE_COUNT__')))
+    .toBe(10_000);
   await page.setViewportSize({ width: 900, height: 600 });
   await expect(page.locator('#metric-canvas')).toHaveText('900 × 600');
   await expect
