@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienaglae/swarm-gpu/blob/main/benchmarks/schemas/benchmark-result.schema.json",
+  "title": "SwarmGPU benchmark result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scenario",
+    "source",
+    "environment",
+    "adapter",
+    "measurement",
+    "results"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "seed",
+        "instanceCount",
+        "cameraPath",
+        "fixedTimestepSeconds",
+        "canvasWidth",
+        "canvasHeight",
+        "renderScale",
+        "lodThresholds"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9-]*$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "instanceCount": { "type": "integer", "minimum": 0 },
+        "cameraPath": { "type": "string", "minLength": 1 },
+        "fixedTimestepSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "canvasWidth": { "type": "integer", "minimum": 1 },
+        "canvasHeight": { "type": "integer", "minimum": 1 },
+        "renderScale": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "lodThresholds": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 2,
+          "maxItems": 4
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty"],
+      "properties": {
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "dirty": { "type": "boolean", "const": false }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordedAt", "os", "browser", "powerPreference"],
+      "properties": {
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "os": { "type": "string", "minLength": 1 },
+        "browser": { "type": "string", "minLength": 1 },
+        "powerPreference": { "enum": ["high-performance", "low-power", "default"] },
+        "powerNotes": { "type": "string" },
+        "thermalNotes": { "type": "string" }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "driver", "features", "limits"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "driver": { "type": "string", "minLength": 1 },
+        "features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["warmupSeconds", "sampleSeconds", "sampleCount", "longFrameThresholdMs"],
+      "properties": {
+        "warmupSeconds": { "type": "number", "minimum": 5 },
+        "sampleSeconds": { "type": "number", "minimum": 20 },
+        "sampleCount": { "type": "integer", "minimum": 1 },
+        "longFrameThresholdMs": { "type": "number", "exclusiveMinimum": 0 },
+        "excludedSamples": { "type": "integer", "minimum": 0, "default": 0 },
+        "exclusionReason": { "type": "string" }
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frameIntervalMs", "cpuFrameMs", "gpuFrameMs", "longFrameCount", "drawCalls", "readbacksPerMeasuredFrame"],
+      "properties": {
+        "frameIntervalMs": { "$ref": "#/$defs/percentiles" },
+        "cpuFrameMs": { "$ref": "#/$defs/percentiles" },
+        "gpuFrameMs": {
+          "oneOf": [
+            { "$ref": "#/$defs/percentiles" },
+            { "type": "null" }
+          ]
+        },
+        "gpuTimingUnavailableReason": { "type": "string" },
+        "longFrameCount": { "type": "integer", "minimum": 0 },
+        "drawCalls": { "type": "integer", "minimum": 0 },
+        "readbacksPerMeasuredFrame": { "type": "number", "const": 0 },
+        "visibleCountAfterMeasurement": { "type": "integer", "minimum": 0 },
+        "lodCountsAfterMeasurement": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "estimatedExplicitGpuBytes": { "type": "integer", "minimum": 0 },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "percentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["median", "p95", "p99"],
+      "properties": {
+        "median": { "type": "number", "minimum": 0 },
+        "p95": { "type": "number", "minimum": 0 },
+        "p99": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}
+
