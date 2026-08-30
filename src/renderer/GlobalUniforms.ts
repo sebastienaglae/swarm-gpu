@@ -1,9 +1,9 @@
 import { readNumber } from '../math/typedArray';
 import type { OrbitCamera } from './OrbitCamera';
 
-export const GLOBAL_UNIFORM_FLOATS = 80;
+export const GLOBAL_UNIFORM_FLOATS = 96;
 export const GLOBAL_UNIFORM_BYTES = GLOBAL_UNIFORM_FLOATS * Float32Array.BYTES_PER_ELEMENT;
-export const GLOBAL_UNIFORM_USED_FLOATS = 80;
+export const GLOBAL_UNIFORM_USED_FLOATS = 96;
 export const GLOBAL_UNIFORM_USED_BYTES =
   GLOBAL_UNIFORM_USED_FLOATS * Float32Array.BYTES_PER_ELEMENT;
 
@@ -17,6 +17,7 @@ export const GLOBAL_OFFSETS = {
   simulationA: 60,
   simulationB: 64,
   simulationC: 68,
+  frustumPlanes: 72,
 } as const;
 
 export interface SimulationUniformValues {
@@ -70,4 +71,5 @@ export function writeGlobalUniforms(
   target[GLOBAL_OFFSETS.simulationB + 2] = simulation.noiseStrength;
   target[GLOBAL_OFFSETS.simulationB + 3] = simulation.attractorRadius;
   target[GLOBAL_OFFSETS.simulationC] = simulation.frameIndex;
+  target.set(camera.frustumPlanes, GLOBAL_OFFSETS.frustumPlanes);
 }

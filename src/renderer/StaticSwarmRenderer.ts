@@ -1,7 +1,14 @@
 import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
+import {
+  INDIRECT_ARGUMENT_BYTES,
+  VISIBILITY_COUNTER_BYTES,
+  VISIBLE_ID_BYTES,
+} from '../culling/CullingModel';
 import type { CanvasSize } from '../gpu/canvasSize';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import backgroundShaderSource from '../shaders/background.wgsl?raw';
+import cullShaderSource from '../shaders/cull.wgsl?raw';
+import finalizeIndirectShaderSource from '../shaders/finalize-indirect.wgsl?raw';
 import simulateShaderSource from '../shaders/simulate.wgsl?raw';
 import swarmShaderSource from '../shaders/swarm.wgsl?raw';
 import { SIMULATION_WORKGROUP_SIZE } from '../simulation/SimulationModel';
@@ -32,7 +39,7 @@ export const BUFFER_UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024;
 export const SWARM_DRAW_CALLS = 1;
 export const AUXILIARY_DRAW_CALLS = 1;
 export const TOTAL_DRAW_CALLS = SWARM_DRAW_CALLS + AUXILIARY_DRAW_CALLS;
-export const COMPUTE_DISPATCHES = 1;
+export const COMPUTE_DISPATCHES = 3;
 
 const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
 
@@ -42,9 +49,12 @@ export function estimateSimulationStateBytes(capacity: number): number {
   }
   return (
     capacity *
-    (POSITION_BYTES_PER_INSTANCE * 2 +
-      VELOCITY_BYTES_PER_INSTANCE * 2 +
-      APPEARANCE_BYTES_PER_INSTANCE)
+      (POSITION_BYTES_PER_INSTANCE * 2 +
+        VELOCITY_BYTES_PER_INSTANCE * 2 +
+        APPEARANCE_BYTES_PER_INSTANCE +
+        VISIBLE_ID_BYTES) +
+    VISIBILITY_COUNTER_BYTES +
+    INDIRECT_ARGUMENT_BYTES
   );
 }
 
@@ -63,6 +73,14 @@ export interface GpuFrameTiming {
   readonly totalMs: number;
 }
 
+export interface VisibilityCapture {
+  readonly appendedCount: number;
+  readonly visibleCount: number;
+  readonly overflowCount: number;
+  readonly indirectArguments: Uint32Array;
+  readonly visibleIds: Uint32Array;
+}
+
 interface MutableStateBuffers {
   readonly positions: GPUBuffer;
   readonly velocities: GPUBuffer;
@@ -72,9 +90,10 @@ export class StaticSwarmRenderer {
   public readonly capacity: number;
   public readonly triangleCount = DRONE_TRIANGLE_COUNT;
   public readonly drawCalls = TOTAL_DRAW_CALLS;
-  public readonly computeDispatches = COMPUTE_DISPATCHES;
+  public readonly computeDispatches: number;
   public readonly workgroupSize: number;
   public readonly estimatedStateBytes: number;
+  public readonly indirectRendering: boolean;
   public lastCpuFrameMs = 0;
 
   readonly #device: GPUDevice;
@@ -87,11 +106,18 @@ export class StaticSwarmRenderer {
   readonly #stateBuffers: readonly [MutableStateBuffers, MutableStateBuffers];
   readonly #renderBindGroups: readonly [GPUBindGroup, GPUBindGroup];
   readonly #computeBindGroups: readonly [GPUBindGroup, GPUBindGroup];
+  readonly #cullBindGroups: readonly [GPUBindGroup, GPUBindGroup];
+  readonly #finalizeBindGroup: GPUBindGroup;
+  readonly #visibleIdsBuffer: GPUBuffer;
+  readonly #visibilityCounterBuffer: GPUBuffer;
+  readonly #indirectBuffer: GPUBuffer;
   readonly #initialPositions: Float32Array;
   readonly #initialVelocities: Float32Array;
   readonly #backgroundPipeline: GPURenderPipeline;
   readonly #swarmPipeline: GPURenderPipeline;
   readonly #simulationPipeline: GPUComputePipeline;
+  readonly #cullingPipeline: GPUComputePipeline;
+  readonly #finalizePipeline: GPUComputePipeline;
   readonly #clearColor: GPUColorDict = { r: 0.003, g: 0.007, b: 0.015, a: 1 };
   readonly #colorAttachment: GPURenderPassColorAttachment = {
     view: undefined as unknown as GPUTextureView,
@@ -139,12 +165,20 @@ export class StaticSwarmRenderer {
     stateBuffers: readonly [MutableStateBuffers, MutableStateBuffers],
     renderBindGroups: readonly [GPUBindGroup, GPUBindGroup],
     computeBindGroups: readonly [GPUBindGroup, GPUBindGroup],
+    cullBindGroups: readonly [GPUBindGroup, GPUBindGroup],
+    finalizeBindGroup: GPUBindGroup,
+    visibleIdsBuffer: GPUBuffer,
+    visibilityCounterBuffer: GPUBuffer,
+    indirectBuffer: GPUBuffer,
     initialPositions: Float32Array,
     initialVelocities: Float32Array,
     backgroundPipeline: GPURenderPipeline,
     swarmPipeline: GPURenderPipeline,
     simulationPipeline: GPUComputePipeline,
+    cullingPipeline: GPUComputePipeline,
+    finalizePipeline: GPUComputePipeline,
     workgroupSize: number,
+    indirectRendering: boolean,
   ) {
     this.#device = device;
     this.capacity = capacity;
@@ -160,12 +194,24 @@ export class StaticSwarmRenderer {
     this.#stateBuffers = stateBuffers;
     this.#renderBindGroups = renderBindGroups;
     this.#computeBindGroups = computeBindGroups;
+    this.#cullBindGroups = cullBindGroups;
+    this.#finalizeBindGroup = finalizeBindGroup;
+    this.#visibleIdsBuffer = this.#resources.register(visibleIdsBuffer, 'Visible instance IDs');
+    this.#visibilityCounterBuffer = this.#resources.register(
+      visibilityCounterBuffer,
+      'Visibility counters',
+    );
+    this.#indirectBuffer = this.#resources.register(indirectBuffer, 'Indexed indirect arguments');
     this.#initialPositions = initialPositions;
     this.#initialVelocities = initialVelocities;
     this.#backgroundPipeline = backgroundPipeline;
     this.#swarmPipeline = swarmPipeline;
     this.#simulationPipeline = simulationPipeline;
+    this.#cullingPipeline = cullingPipeline;
+    this.#finalizePipeline = finalizePipeline;
     this.workgroupSize = workgroupSize;
+    this.indirectRendering = indirectRendering;
+    this.computeDispatches = indirectRendering ? COMPUTE_DISPATCHES : 1;
   }
 
   public static async create(
@@ -173,6 +219,7 @@ export class StaticSwarmRenderer {
     canvasFormat: GPUTextureFormat,
     requestedCapacity: number,
     requestedWorkgroupSize = SIMULATION_WORKGROUP_SIZE,
+    indirectRendering = true,
   ): Promise<StaticSwarmRenderer> {
     const capacity = Math.max(1, Math.min(STATIC_RENDERER_MAX_INSTANCES, requestedCapacity));
     const createdBuffers: GPUBuffer[] = [];
@@ -224,6 +271,24 @@ export class StaticSwarmRenderer {
         ),
       });
       const stateBuffers = [createState('A'), createState('B')] as const;
+      const visibleIdsBuffer = createBuffer(
+        'Compacted visible instance IDs',
+        capacity * VISIBLE_ID_BYTES,
+        GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+      );
+      const visibilityCounterBuffer = createBuffer(
+        'Visibility counters and capacity',
+        VISIBILITY_COUNTER_BYTES,
+        GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+      );
+      const indirectBuffer = createBuffer(
+        'Indexed indirect arguments',
+        INDIRECT_ARGUMENT_BYTES,
+        GPUBufferUsage.STORAGE |
+          GPUBufferUsage.INDIRECT |
+          GPUBufferUsage.COPY_DST |
+          GPUBufferUsage.COPY_SRC,
+      );
 
       uploadArrayBufferInChunks(device.queue, vertexBuffer, DRONE_VERTICES);
       uploadArrayBufferInChunks(device.queue, indexBuffer, DRONE_INDICES);
@@ -233,6 +298,7 @@ export class StaticSwarmRenderer {
         uploadArrayBufferInChunks(device.queue, state.positions, instances.positions);
         uploadArrayBufferInChunks(device.queue, state.velocities, instances.velocities);
       }
+      device.queue.writeBuffer(visibilityCounterBuffer, 8, new Uint32Array([capacity, 0]));
 
       const renderLayout = device.createBindGroupLayout({
         label: 'GPU swarm render bind group layout',
@@ -256,6 +322,7 @@ export class StaticSwarmRenderer {
             true,
             capacity * VELOCITY_BYTES_PER_INSTANCE,
           ),
+          storageLayoutEntry(4, GPUShaderStage.VERTEX, true, capacity * VISIBLE_ID_BYTES),
         ],
       });
       const computeLayout = device.createBindGroupLayout({
@@ -294,6 +361,27 @@ export class StaticSwarmRenderer {
           ),
         ],
       });
+      const cullLayout = device.createBindGroupLayout({
+        label: 'GPU culling bind group layout',
+        entries: [
+          uniformLayoutEntry(GPUShaderStage.COMPUTE),
+          storageLayoutEntry(
+            1,
+            GPUShaderStage.COMPUTE,
+            true,
+            capacity * POSITION_BYTES_PER_INSTANCE,
+          ),
+          storageLayoutEntry(2, GPUShaderStage.COMPUTE, false, capacity * VISIBLE_ID_BYTES),
+          storageLayoutEntry(3, GPUShaderStage.COMPUTE, false, VISIBILITY_COUNTER_BYTES),
+        ],
+      });
+      const finalizeLayout = device.createBindGroupLayout({
+        label: 'Indirect finalization bind group layout',
+        entries: [
+          storageLayoutEntry(0, GPUShaderStage.COMPUTE, false, VISIBILITY_COUNTER_BYTES),
+          storageLayoutEntry(1, GPUShaderStage.COMPUTE, false, INDIRECT_ARGUMENT_BYTES),
+        ],
+      });
       const renderPipelineLayout = device.createPipelineLayout({
         label: 'GPU swarm render pipeline layout',
         bindGroupLayouts: [renderLayout],
@@ -301,6 +389,14 @@ export class StaticSwarmRenderer {
       const computePipelineLayout = device.createPipelineLayout({
         label: 'GPU simulation pipeline layout',
         bindGroupLayouts: [computeLayout],
+      });
+      const cullPipelineLayout = device.createPipelineLayout({
+        label: 'GPU culling pipeline layout',
+        bindGroupLayouts: [cullLayout],
+      });
+      const finalizePipelineLayout = device.createPipelineLayout({
+        label: 'GPU indirect finalization pipeline layout',
+        bindGroupLayouts: [finalizeLayout],
       });
       const swarmModule = device.createShaderModule({
         label: 'GPU swarm shader',
@@ -314,13 +410,29 @@ export class StaticSwarmRenderer {
         label: 'GPU simulation shader',
         code: simulateShaderSource,
       });
+      const cullModule = device.createShaderModule({
+        label: 'GPU culling shader',
+        code: cullShaderSource,
+      });
+      const finalizeModule = device.createShaderModule({
+        label: 'GPU indirect finalization shader',
+        code: finalizeIndirectShaderSource,
+      });
       await Promise.all([
         assertShaderCompiles(swarmModule, 'GPU swarm shader'),
         assertShaderCompiles(backgroundModule, 'background shader'),
         assertShaderCompiles(simulationModule, 'GPU simulation shader'),
+        assertShaderCompiles(cullModule, 'GPU culling shader'),
+        assertShaderCompiles(finalizeModule, 'GPU indirect finalization shader'),
       ]);
 
-      const [backgroundPipeline, swarmPipeline, simulationPipeline] = await Promise.all([
+      const [
+        backgroundPipeline,
+        swarmPipeline,
+        simulationPipeline,
+        cullingPipeline,
+        finalizePipeline,
+      ] = await Promise.all([
         device.createRenderPipelineAsync({
           label: 'Procedural background pipeline',
           layout: renderPipelineLayout,
@@ -339,6 +451,7 @@ export class StaticSwarmRenderer {
           vertex: {
             module: swarmModule,
             entryPoint: 'vertexMain',
+            constants: { USE_VISIBLE_IDS: indirectRendering ? 1 : 0 },
             buffers: [
               {
                 arrayStride: DRONE_VERTEX_STRIDE,
@@ -366,6 +479,20 @@ export class StaticSwarmRenderer {
             constants: { WORKGROUP_SIZE: workgroupSize },
           },
         }),
+        device.createComputePipelineAsync({
+          label: 'GPU frustum culling pipeline',
+          layout: cullPipelineLayout,
+          compute: {
+            module: cullModule,
+            entryPoint: 'cull',
+            constants: { WORKGROUP_SIZE: workgroupSize },
+          },
+        }),
+        device.createComputePipelineAsync({
+          label: 'GPU indirect finalization pipeline',
+          layout: finalizePipelineLayout,
+          compute: { module: finalizeModule, entryPoint: 'finalizeIndirect' },
+        }),
       ]);
 
       const createRenderBindGroup = (state: MutableStateBuffers, index: number): GPUBindGroup =>
@@ -377,6 +504,7 @@ export class StaticSwarmRenderer {
             { binding: 1, resource: { buffer: state.positions } },
             { binding: 2, resource: { buffer: appearanceBuffer } },
             { binding: 3, resource: { buffer: state.velocities } },
+            { binding: 4, resource: { buffer: visibleIdsBuffer } },
           ],
         });
       const createComputeBindGroup = (
@@ -404,6 +532,29 @@ export class StaticSwarmRenderer {
         createComputeBindGroup(stateBuffers[0], stateBuffers[1], 0),
         createComputeBindGroup(stateBuffers[1], stateBuffers[0], 1),
       ] as const;
+      const createCullBindGroup = (state: MutableStateBuffers, index: number): GPUBindGroup =>
+        device.createBindGroup({
+          label: `GPU culling state ${String(index)}`,
+          layout: cullLayout,
+          entries: [
+            { binding: 0, resource: { buffer: uniformBuffer, size: GLOBAL_UNIFORM_BYTES } },
+            { binding: 1, resource: { buffer: state.positions } },
+            { binding: 2, resource: { buffer: visibleIdsBuffer } },
+            { binding: 3, resource: { buffer: visibilityCounterBuffer } },
+          ],
+        });
+      const cullBindGroups = [
+        createCullBindGroup(stateBuffers[0], 0),
+        createCullBindGroup(stateBuffers[1], 1),
+      ] as const;
+      const finalizeBindGroup = device.createBindGroup({
+        label: 'GPU indirect finalization resources',
+        layout: finalizeLayout,
+        entries: [
+          { binding: 0, resource: { buffer: visibilityCounterBuffer } },
+          { binding: 1, resource: { buffer: indirectBuffer } },
+        ],
+      });
 
       const validationError = await device.popErrorScope();
       scopePopped = true;
@@ -419,12 +570,20 @@ export class StaticSwarmRenderer {
         stateBuffers,
         renderBindGroups,
         computeBindGroups,
+        cullBindGroups,
+        finalizeBindGroup,
+        visibleIdsBuffer,
+        visibilityCounterBuffer,
+        indirectBuffer,
         instances.positions,
         instances.velocities,
         backgroundPipeline,
         swarmPipeline,
         simulationPipeline,
+        cullingPipeline,
+        finalizePipeline,
         workgroupSize,
+        indirectRendering,
       );
     } catch (error) {
       if (!scopePopped) await device.popErrorScope();
@@ -484,10 +643,22 @@ export class StaticSwarmRenderer {
       .getCurrentTexture()
       .createView(this.#canvasViewDescriptor);
     const encoder = this.#device.createCommandEncoder(this.#commandEncoderDescriptor);
+    if (this.indirectRendering) {
+      encoder.clearBuffer(this.#visibilityCounterBuffer, 0, 8);
+      encoder.clearBuffer(this.#indirectBuffer);
+    }
     const computePass = encoder.beginComputePass(this.#computePassDescriptor);
     computePass.setPipeline(this.#simulationPipeline);
     computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
     computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+    if (this.indirectRendering) {
+      computePass.setPipeline(this.#cullingPipeline);
+      computePass.setBindGroup(0, this.#cullBindGroups[destinationParity]);
+      computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+      computePass.setPipeline(this.#finalizePipeline);
+      computePass.setBindGroup(0, this.#finalizeBindGroup);
+      computePass.dispatchWorkgroups(1);
+    }
     computePass.end();
 
     const renderPass = encoder.beginRenderPass(this.#renderPassDescriptor);
@@ -497,7 +668,8 @@ export class StaticSwarmRenderer {
     renderPass.setPipeline(this.#swarmPipeline);
     renderPass.setVertexBuffer(0, this.#vertexBuffer);
     renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
-    renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
+    if (this.indirectRendering) renderPass.drawIndexedIndirect(this.#indirectBuffer, 0);
+    else renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
     renderPass.end();
     this.#submission[0] = encoder.finish(this.#commandBufferDescriptor);
     this.#device.queue.submit(this.#submission);
@@ -559,6 +731,70 @@ export class StaticSwarmRenderer {
     } finally {
       positionReadback.destroy();
       velocityReadback.destroy();
+    }
+  }
+
+  public async captureVisibility(maxVisibleIds = 64): Promise<VisibilityCapture> {
+    if (this.#destroyed) throw new Error('Cannot inspect a destroyed renderer');
+    const idCount = Math.min(this.capacity, Math.max(0, Math.floor(maxVisibleIds)));
+    const idBytes = idCount * VISIBLE_ID_BYTES;
+    const counterReadback = this.#device.createBuffer({
+      label: 'Explicit debug visibility counter readback',
+      size: VISIBILITY_COUNTER_BYTES,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    const indirectReadback = this.#device.createBuffer({
+      label: 'Explicit debug indirect arguments readback',
+      size: INDIRECT_ARGUMENT_BYTES,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    const idsReadback = this.#device.createBuffer({
+      label: 'Explicit debug visible IDs readback',
+      size: Math.max(VISIBLE_ID_BYTES, idBytes),
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    try {
+      const encoder = this.#device.createCommandEncoder({ label: 'Explicit visibility readback' });
+      encoder.copyBufferToBuffer(
+        this.#visibilityCounterBuffer,
+        0,
+        counterReadback,
+        0,
+        VISIBILITY_COUNTER_BYTES,
+      );
+      encoder.copyBufferToBuffer(
+        this.#indirectBuffer,
+        0,
+        indirectReadback,
+        0,
+        INDIRECT_ARGUMENT_BYTES,
+      );
+      if (idBytes > 0) {
+        encoder.copyBufferToBuffer(this.#visibleIdsBuffer, 0, idsReadback, 0, idBytes);
+      }
+      this.#device.queue.submit([encoder.finish()]);
+      await Promise.all([
+        counterReadback.mapAsync(GPUMapMode.READ),
+        indirectReadback.mapAsync(GPUMapMode.READ),
+        idsReadback.mapAsync(GPUMapMode.READ),
+      ]);
+      const counters = new Uint32Array(counterReadback.getMappedRange());
+      const appendedCount = counters[0] ?? 0;
+      const visibleCount = Math.min(appendedCount, this.capacity);
+      const capturedIds = Math.min(visibleCount, idCount);
+      return {
+        appendedCount,
+        visibleCount,
+        overflowCount: counters[1] ?? 0,
+        indirectArguments: new Uint32Array(indirectReadback.getMappedRange().slice(0)),
+        visibleIds: new Uint32Array(
+          idsReadback.getMappedRange().slice(0, capturedIds * VISIBLE_ID_BYTES),
+        ),
+      };
+    } finally {
+      counterReadback.destroy();
+      indirectReadback.destroy();
+      idsReadback.destroy();
     }
   }
 

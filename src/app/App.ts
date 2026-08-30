@@ -1,4 +1,5 @@
 import { DiagnosticsOverlay } from '../diagnostics/DiagnosticsOverlay';
+import { compactVisibleSpheres } from '../culling/CullingModel';
 import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
 import type { CanvasSize } from '../gpu/canvasSize';
 import { computeCanvasSize } from '../gpu/canvasSize';
@@ -7,6 +8,7 @@ import { toUserFacingError } from '../gpu/GpuError';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import { InputState } from '../input/InputState';
 import { OrbitCamera } from '../renderer/OrbitCamera';
+import { DRONE_BOUNDING_RADIUS, DRONE_INDICES } from '../renderer/DroneMesh';
 import { createStaticInstanceData } from '../renderer/InstanceData';
 import {
   STATIC_POPULATION_PRESETS,
@@ -91,6 +93,7 @@ export class App {
   readonly #fixedTimestep = new URLSearchParams(location.search).get('benchmark') === '1';
   readonly #requestedWorkgroupSize =
     new URLSearchParams(location.search).get('workgroup') === '256' ? 256 : 128;
+  readonly #indirectRendering = new URLSearchParams(location.search).get('direct') !== '1';
 
   readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
@@ -280,6 +283,7 @@ export class App {
         gpu.canvasFormat,
         rendererCapacity,
         this.#requestedWorkgroupSize,
+        this.#indirectRendering,
       );
       if (generation !== this.#generation) {
         renderer.destroy();
@@ -435,6 +439,70 @@ export class App {
       }
     }
     return { fixtureCount: count, maxAbsoluteError };
+  }
+
+  public async validateVisibilityForDevelopment(instanceCount = 64): Promise<{
+    readonly fixtureCount: number;
+    readonly visibleCount: number;
+    readonly overflowCount: number;
+    readonly idsMatch: boolean;
+    readonly indirectMatch: boolean;
+  }> {
+    const renderer = this.#renderer;
+    const gpu = this.#gpu;
+    if (
+      !import.meta.env.DEV ||
+      this.state.current !== 'paused' ||
+      renderer === undefined ||
+      gpu === undefined ||
+      !renderer.indirectRendering ||
+      !this.#canvasSize.drawable
+    ) {
+      throw new Error('Visibility validation requires paused development indirect rendering');
+    }
+    const count = Math.min(64, Math.max(0, Math.floor(instanceCount)));
+    renderer.resetSimulation();
+    this.#simulationFrame.timeSeconds = 0;
+    this.#simulationFrame.deltaSeconds = 0;
+    this.#simulationFrame.attractorStrength = 0;
+    renderer.render(
+      gpu.canvasContext,
+      this.#camera,
+      this.#simulationFrame,
+      this.#canvasSize.width,
+      this.#canvasSize.height,
+      count,
+      window.devicePixelRatio,
+    );
+    const [state, visibility] = await Promise.all([
+      renderer.captureSimulationState(count),
+      renderer.captureVisibility(count),
+    ]);
+    const expected = compactVisibleSpheres(
+      state.positions,
+      count,
+      renderer.capacity,
+      this.#camera.frustumPlanes,
+      DRONE_BOUNDING_RADIUS,
+    );
+    const actualIds = Array.from(visibility.visibleIds).sort((a, b) => a - b);
+    const expectedIds = Array.from(expected.visibleIds).sort((a, b) => a - b);
+    const args = visibility.indirectArguments;
+    return {
+      fixtureCount: count,
+      visibleCount: visibility.visibleCount,
+      overflowCount: visibility.overflowCount,
+      idsMatch:
+        actualIds.length === expectedIds.length &&
+        actualIds.every((value, index) => value === expectedIds[index]),
+      indirectMatch:
+        args.length === 5 &&
+        args[0] === DRONE_INDICES.length &&
+        args[1] === expected.visibleCount &&
+        args[2] === 0 &&
+        args[3] === 0 &&
+        args[4] === 0,
+    };
   }
 
   public async measureGpuFrameForDevelopment(): Promise<{

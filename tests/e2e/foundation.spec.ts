@@ -36,6 +36,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     let lastTextureSize = '';
     let textureDestroyCount = 0;
     let computeDispatchCount = 0;
+    let indirectDrawCount = 0;
     let lastAttractorStrength = 0;
     const noop = () => {
       return;
@@ -95,6 +96,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         createRenderPipelineAsync: async () => ({}),
         createComputePipelineAsync: async () => ({}),
         createCommandEncoder: () => ({
+          clearBuffer: noop,
           beginComputePass: () => ({
             setBindGroup: noop,
             setPipeline: noop,
@@ -111,6 +113,9 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
             draw: noop,
             drawIndexed: (_indices: number, instances: number) => {
               lastInstanceCount = instances;
+            },
+            drawIndexedIndirect: () => {
+              indirectDrawCount += 1;
             },
             end: noop,
           }),
@@ -171,6 +176,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         VERTEX: 32,
         UNIFORM: 64,
         STORAGE: 128,
+        INDIRECT: 256,
       },
     });
     Object.defineProperty(globalThis, 'GPUShaderStage', {
@@ -208,6 +214,10 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       configurable: true,
       get: () => computeDispatchCount,
     });
+    Object.defineProperty(globalThis, '__MOCK_INDIRECT_DRAW_COUNT__', {
+      configurable: true,
+      get: () => indirectDrawCount,
+    });
     Object.defineProperty(globalThis, '__MOCK_ATTRACTOR_STRENGTH__', {
       configurable: true,
       get: () => lastAttractorStrength,
@@ -221,12 +231,12 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#metric-timestamp')).toHaveText('available');
   await expect(page.locator('#metric-canvas')).not.toHaveText('0 × 0');
   await expect(page.locator('#metric-instances')).toHaveText('500,000');
-  await expect(page.locator('#metric-dispatches')).toHaveText('1 @ 128 threads');
+  await expect(page.locator('#metric-dispatches')).toHaveText('3 @ 128 threads');
   await page.locator('#population-select').selectOption('100000');
   await expect(page.locator('#metric-instances')).toHaveText('100,000');
   await expect
-    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_LAST_INSTANCE_COUNT__')))
-    .toBe(100_000);
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_INDIRECT_DRAW_COUNT__')))
+    .toBeGreaterThan(0);
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_COMPUTE_DISPATCH_COUNT__')))
     .toBeGreaterThan(0);

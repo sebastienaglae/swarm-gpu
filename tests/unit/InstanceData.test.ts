@@ -36,8 +36,8 @@ describe('static instance generation', () => {
     expect(() => createStaticInstanceData(1.5)).toThrow(RangeError);
   });
 
-  it('estimates two mutable copies plus one immutable appearance buffer', () => {
-    expect(estimateSimulationStateBytes(500_000)).toBe(40_000_000);
+  it('estimates simulation, appearance, visible IDs, counters, and indirect arguments', () => {
+    expect(estimateSimulationStateBytes(500_000)).toBe(42_000_036);
     expect(() => estimateSimulationStateBytes(-1)).toThrow(RangeError);
   });
 });

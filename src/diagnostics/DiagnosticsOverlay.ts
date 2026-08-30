@@ -11,6 +11,7 @@ export class DiagnosticsOverlay {
   readonly #capacity: HTMLOutputElement;
   readonly #timestamp: HTMLOutputElement;
   readonly #instances: HTMLOutputElement;
+  readonly #visible: HTMLOutputElement;
   readonly #triangles: HTMLOutputElement;
   readonly #draws: HTMLOutputElement;
   readonly #dispatches: HTMLOutputElement;
@@ -28,6 +29,7 @@ export class DiagnosticsOverlay {
     this.#capacity = requireOutput('metric-capacity');
     this.#timestamp = requireOutput('metric-timestamp');
     this.#instances = requireOutput('metric-instances');
+    this.#visible = requireOutput('metric-visible');
     this.#triangles = requireOutput('metric-triangles');
     this.#draws = requireOutput('metric-draws');
     this.#dispatches = requireOutput('metric-dispatches');
@@ -69,6 +71,7 @@ export class DiagnosticsOverlay {
   public setRenderer(renderer: StaticSwarmRenderer, instanceCount: number): void {
     this.#draws.value = String(renderer.drawCalls);
     this.#dispatches.value = `${String(renderer.computeDispatches)} @ ${String(renderer.workgroupSize)} threads`;
+    this.#visible.value = renderer.indirectRendering ? 'GPU-resident' : 'direct reference';
     this.#memory.value = `${(renderer.estimatedStateBytes / 1_048_576).toFixed(1)} MiB estimated`;
     this.#gpu.value = 'not measured (Phase 06)';
     this.setPopulation(instanceCount, renderer.triangleCount);
