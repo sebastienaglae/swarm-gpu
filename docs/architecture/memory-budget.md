@@ -40,6 +40,7 @@ The conservative explicit allocation estimate for one million instances with dep
 ## Initial policy
 
 - Use 256 MiB as the project-controlled explicit allocation ceiling on the reference 4 GiB discrete GPU. This is a safety policy, not an inference that WebGPU exposes all VRAM.
+- Reserve 32 MiB of that ceiling before deriving instance capacity. The reserve covers depth/color attachments, mesh/uniform/counter/query resources, three 20-byte indexed indirect records, and alignment headroom. The initial variable-state capacity is therefore `floor((256 MiB - 32 MiB) / 92)` = 2,553,054 instances before adapter-specific limits are applied.
 - Never select a population using VRAM alone. Phase 01 must validate each buffer against `maxStorageBufferBindingSize`, total buffer size limits, maximum storage buffers per shader stage, dispatch limits, and successful allocation.
 - Compute the highest safe preset before allocation. Disable unsupported presets with the limiting reason.
 - Default to at most 100,000 instances until Phase 06 validates a higher stable default on the actual adapter/browser path.

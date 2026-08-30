@@ -1,5 +1,7 @@
 export const INSTANCE_BYTES = 92;
 export const EXPLICIT_GPU_BUDGET_BYTES = 256 * 1024 * 1024;
+export const FIXED_GPU_RESERVE_BYTES = 32 * 1024 * 1024;
+export const INDIRECT_ARGUMENT_BYTES = 3 * 5 * Uint32Array.BYTES_PER_ELEMENT;
 export const INSTANCE_PRESETS = [10_000, 100_000, 250_000, 500_000, 1_000_000] as const;
 export const INITIAL_COMPUTE_WORKGROUP_SIZE = 256;
 
@@ -94,7 +96,9 @@ export function deriveCapacity(
       factor: 'dispatch',
     },
     {
-      value: Math.floor(explicitBudgetBytes / INSTANCE_BYTES),
+      value: Math.floor(
+        Math.max(0, explicitBudgetBytes - FIXED_GPU_RESERVE_BYTES) / INSTANCE_BYTES,
+      ),
       factor: 'memory-budget',
     },
   ];

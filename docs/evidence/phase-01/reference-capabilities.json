@@ -48,7 +48,7 @@
     "state": "running",
     "canvasWidth": 1920,
     "canvasHeight": 1080,
-    "derivedMaxInstances": 2917776,
+    "derivedMaxInstances": 2553054,
     "capacityLimitingFactor": "memory-budget",
     "timestampQuerySupported": true,
     "uncapturedGpuErrors": 0

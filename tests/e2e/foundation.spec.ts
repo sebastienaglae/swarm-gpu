@@ -173,4 +173,11 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   expect(await page.evaluate(() => Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__'))).toBe(
     disposedSubmitCount,
   );
+
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-app-state', 'running');
+  await page.evaluate(() => {
+    Reflect.get(globalThis, '__SWARM_GPU_APP__').dispose();
+  });
+  await expect(page.locator('html')).toHaveAttribute('data-app-state', 'disposed');
 });

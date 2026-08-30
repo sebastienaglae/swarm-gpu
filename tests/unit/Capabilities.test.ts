@@ -3,6 +3,8 @@ import {
   deriveCapacity,
   estimateInstanceBytes,
   EXPLICIT_GPU_BUDGET_BYTES,
+  FIXED_GPU_RESERVE_BYTES,
+  INDIRECT_ARGUMENT_BYTES,
   INSTANCE_BYTES,
 } from '../../src/gpu/Capabilities';
 
@@ -29,11 +31,14 @@ describe('GPU capacity helpers', () => {
     expect(INSTANCE_BYTES).toBe(92);
     expect(estimateInstanceBytes(1_000_000)).toBe(92_000_000);
     expect(estimateInstanceBytes(250_000)).toBe(23_000_000);
+    expect(INDIRECT_ARGUMENT_BYTES).toBe(60);
   });
 
   it('uses the explicit project memory budget when it is the tightest limit', () => {
     const report = deriveCapacity(10_000_000, generousLimits);
-    expect(report.maxInstances).toBe(Math.floor(EXPLICIT_GPU_BUDGET_BYTES / INSTANCE_BYTES));
+    expect(report.maxInstances).toBe(
+      Math.floor((EXPLICIT_GPU_BUDGET_BYTES - FIXED_GPU_RESERVE_BYTES) / INSTANCE_BYTES),
+    );
     expect(report.limitingFactor).toBe('memory-budget');
     expect(report.selectedInstances).toBe(report.maxInstances);
     expect(report.presets.every((preset) => preset.supported)).toBe(true);
