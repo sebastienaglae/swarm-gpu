@@ -1,0 +1,52 @@
+name: Performance report
+description: Report reproducible performance behavior on a specific device
+title: "perf: "
+labels: ["performance"]
+body:
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Primary phase
+      options:
+        - Phase 02 — Renderer baseline
+        - Phase 03 — GPU simulation
+        - Phase 04 — GPU culling and compaction
+        - Phase 05 — GPU LOD and visual system
+        - Phase 06 — Performance and observability
+        - Phase 07 — Reliability and stress
+        - Phase 09 — Research extensions
+    validations:
+      required: true
+  - type: input
+    id: checklist
+    attributes:
+      label: Phase checklist item
+    validations:
+      required: true
+  - type: input
+    id: scenario
+    attributes:
+      label: Scenario ID and schema version
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Commit, browser/version, OS, GPU/driver, power mode, resolution, and render scale.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result
+      description: Population, visibility, warm-up/sample duration, median/p95/p99 CPU and GPU timings, and long frames.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Raw report or reproduction notes
+    validations:
+      required: true
+

@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a reproducible correctness or lifecycle defect
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Primary phase
+      options:
+        - Phase 01 — Project foundation
+        - Phase 02 — Renderer baseline
+        - Phase 03 — GPU simulation
+        - Phase 04 — GPU culling and compaction
+        - Phase 05 — GPU LOD and visual system
+        - Phase 06 — Performance and observability
+        - Phase 07 — Reliability and stress
+        - Phase 08 — Public release and demo
+        - Phase 09 — Research extensions
+    validations:
+      required: true
+  - type: input
+    id: checklist
+    attributes:
+      label: Phase checklist item
+      description: Quote or link the affected checklist item.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include population, camera/settings, and exact steps.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser/version, OS, GPU/driver, resolution, and adapter features if known.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Console/validation output, screenshots, or exported report. Remove private information.
+
