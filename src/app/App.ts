@@ -85,6 +85,7 @@ export class App {
     fogEnabled: number;
     markerEnabled: number;
     backgroundEnabled: number;
+    simulationEnabled: number;
   } = {
     timeSeconds: 0,
     deltaSeconds: 0,
@@ -109,6 +110,7 @@ export class App {
     fogEnabled: 1,
     markerEnabled: 1,
     backgroundEnabled: 1,
+    simulationEnabled: 1,
   };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
   readonly #cpuUpdateSamples = new FrameSampleRecorder();
@@ -138,6 +140,7 @@ export class App {
   readonly #benchmarkVisibilityPercent = Number(
     new URLSearchParams(location.search).get('visibility') ?? '0',
   );
+  readonly #staticBenchmark = new URLSearchParams(location.search).get('static') === '1';
 
   readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
@@ -363,6 +366,7 @@ export class App {
   }
 
   public async initialize(): Promise<void> {
+    this.#simulationFrame.simulationEnabled = this.#staticBenchmark ? 0 : 1;
     if ([10, 50, 100].includes(this.#benchmarkVisibilityPercent)) {
       this.#simulationFrame.benchmarkVisibilityFraction = this.#benchmarkVisibilityPercent / 100;
       this.#simulationFrame.benchmarkVisibilityEnabled = 1;

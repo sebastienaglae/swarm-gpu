@@ -67,6 +67,7 @@ export function estimateSimulationStateBytes(capacity: number): number {
 export interface SimulationFrame extends SimulationUniformValues {
   readonly timeSeconds: number;
   readonly backgroundEnabled?: number;
+  readonly simulationEnabled?: number;
 }
 
 export interface SimulationStateCapture {
@@ -680,7 +681,8 @@ export class StaticSwarmRenderer {
     );
 
     const sourceParity = this.#stateParity;
-    const destinationParity = sourceParity === 0 ? 1 : 0;
+    const simulationEnabled = (frame.simulationEnabled ?? 1) > 0.5;
+    const destinationParity = simulationEnabled ? (sourceParity === 0 ? 1 : 0) : sourceParity;
     this.#colorAttachment.view = canvasContext
       .getCurrentTexture()
       .createView(this.#canvasViewDescriptor);
@@ -694,9 +696,11 @@ export class StaticSwarmRenderer {
     const telemetrySlot = this.#telemetry?.acquire(frame.frameIndex);
     setTimestampWrites(this.#computePassDescriptor, telemetrySlot?.simulationWrites);
     const computePass = encoder.beginComputePass(this.#computePassDescriptor);
-    computePass.setPipeline(this.#simulationPipeline);
-    computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
-    computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+    if (simulationEnabled) {
+      computePass.setPipeline(this.#simulationPipeline);
+      computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
+      computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+    }
     computePass.end();
     if (this.indirectRendering) {
       setTimestampWrites(this.#cullingPassDescriptor, telemetrySlot?.cullingWrites);

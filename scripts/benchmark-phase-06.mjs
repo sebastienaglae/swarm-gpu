@@ -31,7 +31,10 @@ for (const scenario of scenarios) {
   if (scenario.visibilityPercent === 10 || scenario.visibilityPercent === 100) {
     url.searchParams.set('visibility', String(scenario.visibilityPercent));
   }
-  if (scenario.id.startsWith('STATIC-')) url.searchParams.set('direct', '1');
+  if (scenario.id.startsWith('STATIC-')) {
+    url.searchParams.set('direct', '1');
+    url.searchParams.set('static', '1');
+  }
   const loadStarted = performance.now();
   await page.goto(url.toString(), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.documentElement.dataset.appState !== 'initializing');
