@@ -51,6 +51,8 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         label: 'Mock WebGPU device',
         features: new Set(['timestamp-query']),
         limits: {
+          maxBufferSize: 268_435_456,
+          maxComputeWorkgroupsPerDimension: 65_535,
           maxComputeInvocationsPerWorkgroup: 256,
           maxComputeWorkgroupSizeX: 256,
         },
@@ -336,6 +338,32 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('html')).toHaveAttribute('data-app-state', 'running');
   await page.locator('#reset-button').click();
   await expect(page.locator('html')).toHaveAttribute('data-app-state', 'running');
+
+  const lifecycle = await page.evaluate(async () => {
+    const app = Reflect.get(globalThis, '__SWARM_GPU_APP__');
+    const before = app.captureReliabilitySnapshot();
+    for (let cycle = 0; cycle < 5; cycle += 1) {
+      app.pause();
+      app.pause();
+      app.resume();
+      app.resume();
+      app.reset();
+    }
+    await app.rebuildSceneForDevelopment();
+    const canvas = document.querySelector('#gpu-canvas');
+    const parent = canvas?.parentElement;
+    canvas?.remove();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    if (canvas !== null && parent !== null) parent.prepend(canvas);
+    window.dispatchEvent(new Event('resize'));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return { before, after: app.captureReliabilitySnapshot() };
+  });
+  expect(lifecycle.after.resources.active).toBe(lifecycle.before.resources.active);
+  expect(lifecycle.after.loop.peakActive).toBe(1);
+  expect(lifecycle.after.loop.active).toBe(1);
+  expect(lifecycle.after.canvasConnected).toBe(true);
+  expect(lifecycle.after.lastDeltaSeconds).toBeLessThanOrEqual(1 / 30);
 
   await page.evaluate(() => {
     Reflect.get(globalThis, '__SWARM_GPU_APP__').simulateDeviceLossForDevelopment();

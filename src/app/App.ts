@@ -30,6 +30,14 @@ import {
 import { AppStateStore } from './AppState';
 
 const MAX_AUTOMATIC_RECOVERY_ATTEMPTS = 1;
+const MAX_RELIABILITY_EVENTS = 64;
+
+interface ReliabilityEvent {
+  readonly category: 'device-loss' | 'uncaptured-error' | 'resource-destruction';
+  readonly message: string;
+  readonly state: string;
+  readonly timestamp: string;
+}
 
 interface StatusElements {
   readonly panel: HTMLElement;
@@ -134,6 +142,11 @@ export class App {
   #captureMode = false;
   #lastCpuUpdateMs = 0;
   #lastDiagnosticsTimestamp = 0;
+  #scheduledFrameCount = 0;
+  #cancelledFrameCount = 0;
+  #executedFrameCount = 0;
+  #peakActiveLoops = 0;
+  readonly #reliabilityEvents: ReliabilityEvent[] = [];
   readonly #fixedTimestep = new URLSearchParams(location.search).get('benchmark') === '1';
   readonly #requestedWorkgroupSize =
     new URLSearchParams(location.search).get('workgroup') === '256' ? 256 : 128;
@@ -146,10 +159,16 @@ export class App {
   readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
     if (this.state.current !== 'running') return;
+    this.#executedFrameCount += 1;
 
     const gpu = this.#gpu;
     const renderer = this.#renderer;
-    if (gpu !== undefined && renderer !== undefined && this.#canvasSize.drawable) {
+    if (
+      gpu !== undefined &&
+      renderer !== undefined &&
+      this.#canvasSize.drawable &&
+      this.#canvas.isConnected
+    ) {
       const updateStart = performance.now();
       this.#input.consumeOrbitDelta(this.#cameraInput);
       const [orbitX = 0, orbitY = 0, zoom = 0] = this.#cameraInput;
@@ -531,6 +550,7 @@ export class App {
       warning:
         'Display cadence, CPU wall time, and explicit allocation bytes are approximate. GPU timestamps are delayed and unavailable on unsupported adapters.',
       state: this.state.current,
+      reliability: this.captureReliabilitySnapshot(),
       scenario: {
         population: this.#instanceCount,
         internalResolution: [this.#canvasSize.width, this.#canvasSize.height],
@@ -569,6 +589,55 @@ export class App {
               activeAnimationLoops: this.#frameHandle === undefined ? 0 : 1,
             },
     };
+  }
+
+  public captureReliabilitySnapshot(): object {
+    return {
+      resources: captureResourceRegistrySnapshot(),
+      loop: {
+        active: this.#frameHandle === undefined ? 0 : 1,
+        peakActive: this.#peakActiveLoops,
+        scheduled: this.#scheduledFrameCount,
+        cancelled: this.#cancelledFrameCount,
+        executed: this.#executedFrameCount,
+      },
+      automaticRecoveryAttempts: this.#automaticRecoveryAttempts,
+      events: this.#reliabilityEvents.slice(),
+      canvasConnected: this.#canvas.isConnected,
+      canvasDrawable: this.#canvasSize.drawable,
+      lastDeltaSeconds: this.#simulationFrame.deltaSeconds,
+    };
+  }
+
+  public async rebuildSceneForDevelopment(): Promise<void> {
+    if (!import.meta.env.DEV) throw new Error('Scene rebuild is development-only');
+    const gpu = this.#gpu;
+    if (gpu === undefined || this.state.current === 'disposed') {
+      throw new Error('Scene rebuild requires an active GPU context');
+    }
+    const wasRunning = this.state.current === 'running';
+    if (wasRunning) this.pause();
+    if (this.state.current !== 'paused') throw new Error('Scene rebuild requires a paused app');
+
+    const capacity = Math.min(1_000_000, gpu.capabilities.capacity.maxInstances);
+    this.#resources.destroyAll((label, error) => {
+      this.#recordReliabilityEvent('resource-destruction', `${label}: ${String(error)}`);
+    });
+    this.#renderer = undefined;
+    this.#resources = new ResourceRegistry();
+    const renderer = await StaticSwarmRenderer.create(
+      gpu.device,
+      gpu.canvasFormat,
+      capacity,
+      this.#requestedWorkgroupSize,
+      this.#indirectRendering,
+    );
+    this.#renderer = this.#resources.register(renderer, 'Static swarm renderer');
+    renderer.resize(this.#canvasSize);
+    this.#configurePopulationPresets(renderer.capacity);
+    this.#diagnostics.setRenderer(renderer, this.#instanceCount);
+    this.reset();
+    if (wasRunning) this.resume();
   }
 
   public async captureSimulationStateForDevelopment(instanceCount = 8): Promise<{
@@ -949,12 +1018,15 @@ export class App {
   #scheduleFrame(): void {
     if (this.#frameHandle !== undefined || this.state.current !== 'running') return;
     this.#frameHandle = requestAnimationFrame(this.#onFrame);
+    this.#scheduledFrameCount += 1;
+    this.#peakActiveLoops = Math.max(this.#peakActiveLoops, 1);
   }
 
   #cancelFrame(): void {
     if (this.#frameHandle === undefined) return;
     cancelAnimationFrame(this.#frameHandle);
     this.#frameHandle = undefined;
+    this.#cancelledFrameCount += 1;
   }
 
   async #handleDeviceLost(generation: number, info: GPUDeviceLostInfo): Promise<void> {
@@ -966,6 +1038,10 @@ export class App {
     )
       return;
     console.error(`[SwarmGPU] Device lost (${info.reason})`, info.message);
+    this.#recordReliabilityEvent(
+      'device-loss',
+      `${info.reason}: ${info.message || 'No driver message provided'}`,
+    );
     this.#cancelFrame();
     this.#controls.hidden = true;
     this.#diagnostics.hide();
@@ -994,15 +1070,27 @@ export class App {
 
   #handleUncapturedError(error: GPUError): void {
     console.error(`[SwarmGPU] Uncaptured ${error.constructor.name}`, error.message, error);
+    this.#recordReliabilityEvent('uncaptured-error', `${error.constructor.name}: ${error.message}`);
   }
 
   #destroyGpuResources(): void {
     this.#resources.destroyAll((label, error) => {
       console.error(`[SwarmGPU] Failed to destroy ${label}`, error);
+      this.#recordReliabilityEvent('resource-destruction', `${label}: ${String(error)}`);
     });
     this.#renderer = undefined;
     this.#gpu?.dispose();
     this.#gpu = undefined;
+  }
+
+  #recordReliabilityEvent(category: ReliabilityEvent['category'], message: string): void {
+    if (this.#reliabilityEvents.length >= MAX_RELIABILITY_EVENTS) this.#reliabilityEvents.shift();
+    this.#reliabilityEvents.push({
+      category,
+      message,
+      state: this.state.current,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   #showStatus(title: string, message: string, canRetry: boolean): void {
