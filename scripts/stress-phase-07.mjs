@@ -21,6 +21,7 @@ await browser.close();
 
 async function runScenario(scenario) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  page.setDefaultTimeout(10_000);
   const consoleErrors = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -53,7 +54,13 @@ async function runScenario(scenario) {
       const directory = `benchmarks/results/phase-07/${scenario.id.toLowerCase()}`;
       await mkdir(directory, { recursive: true });
       screenshot = `${directory}/${new Date().toISOString().slice(0, 10)}_${commit}_failure.png`;
-      await page.screenshot({ path: screenshot, fullPage: true });
+      await bounded(
+        page.screenshot({ path: screenshot, fullPage: true }),
+        5_000,
+        'failure screenshot',
+      ).catch(() => {
+        screenshot = null;
+      });
     }
   } finally {
     globalThis.clearTimeout(timeoutHandle);
@@ -124,7 +131,7 @@ async function runScenario(scenario) {
   const path = `${directory}/${new Date().toISOString().slice(0, 10)}_${commit}.json`;
   await writeFile(path, `${JSON.stringify(report, null, 2)}\n`);
   process.stdout.write(`${scenario.id}: ${status} (${String(completed)} completed) -> ${path}\n`);
-  await page.close();
+  await bounded(page.close(), 5_000, 'page close').catch(() => undefined);
   if (status === 'failed' || status === 'timeout') {
     throw new Error(`${scenario.id}: ${error ?? status}`);
   }
@@ -238,9 +245,11 @@ async function runScenario(scenario) {
       }
       completed = scenario.repetitions;
     }
-    await page.waitForTimeout(100);
-    diagnostics = await page.evaluate(() =>
-      Reflect.get(globalThis, '__SWARM_GPU_APP__').captureDiagnosticsReport(),
+    process.stdout.write(`${scenario.id}: collecting final diagnostics\n`);
+    diagnostics = await bounded(
+      page.evaluate(() => Reflect.get(globalThis, '__SWARM_GPU_APP__').captureDiagnosticsReport()),
+      10_000,
+      'final diagnostics',
     );
   }
 
@@ -263,9 +272,26 @@ async function runScenario(scenario) {
 
 async function safeEvaluate(page, callback) {
   try {
-    return await page.evaluate(callback);
+    return await bounded(page.evaluate(callback), 5_000, 'diagnostic evaluation');
   } catch {
     return null;
+  }
+}
+
+async function bounded(promise, timeoutMilliseconds, label) {
+  let handle;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        handle = globalThis.setTimeout(
+          () => reject(new Error(`${label} exceeded ${String(timeoutMilliseconds)} ms`)),
+          timeoutMilliseconds,
+        );
+      }),
+    ]);
+  } finally {
+    globalThis.clearTimeout(handle);
   }
 }
 
