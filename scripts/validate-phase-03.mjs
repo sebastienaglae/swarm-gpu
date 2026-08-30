@@ -15,9 +15,15 @@ await page.waitForFunction(() => document.documentElement.dataset.appState === '
 const comparison = await page.evaluate(() =>
   Reflect.get(globalThis, '__SWARM_GPU_APP__').compareSimulationFixtureForDevelopment(16),
 );
+const gpuTiming = await page.evaluate(() =>
+  Reflect.get(globalThis, '__SWARM_GPU_APP__').measureGpuFrameForDevelopment(),
+);
 if (errors.length > 0) throw new Error(errors.join('\n'));
 if (comparison.fixtureCount !== 16 || comparison.maxAbsoluteError > 0.0001) {
   throw new Error(`Shader comparison exceeded tolerance: ${JSON.stringify(comparison)}`);
 }
-process.stdout.write(`${JSON.stringify(comparison, null, 2)}\n`);
+if (![gpuTiming.computeMs, gpuTiming.renderMs, gpuTiming.totalMs].every(Number.isFinite)) {
+  throw new Error(`GPU timing was invalid: ${JSON.stringify(gpuTiming)}`);
+}
+process.stdout.write(`${JSON.stringify({ comparison, gpuTiming }, null, 2)}\n`);
 await browser.close();

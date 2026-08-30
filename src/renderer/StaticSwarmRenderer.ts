@@ -45,6 +45,12 @@ export interface SimulationStateCapture {
   readonly velocities: Float32Array;
 }
 
+export interface GpuFrameTiming {
+  readonly computeMs: number;
+  readonly renderMs: number;
+  readonly totalMs: number;
+}
+
 interface MutableStateBuffers {
   readonly positions: GPUBuffer;
   readonly velocities: GPUBuffer;
@@ -55,6 +61,7 @@ export class StaticSwarmRenderer {
   public readonly triangleCount = DRONE_TRIANGLE_COUNT;
   public readonly drawCalls = TOTAL_DRAW_CALLS;
   public readonly computeDispatches = COMPUTE_DISPATCHES;
+  public readonly workgroupSize: number;
   public readonly estimatedStateBytes: number;
   public lastCpuFrameMs = 0;
 
@@ -125,6 +132,7 @@ export class StaticSwarmRenderer {
     backgroundPipeline: GPURenderPipeline,
     swarmPipeline: GPURenderPipeline,
     simulationPipeline: GPUComputePipeline,
+    workgroupSize: number,
   ) {
     this.#device = device;
     this.capacity = capacity;
@@ -149,15 +157,24 @@ export class StaticSwarmRenderer {
     this.#backgroundPipeline = backgroundPipeline;
     this.#swarmPipeline = swarmPipeline;
     this.#simulationPipeline = simulationPipeline;
+    this.workgroupSize = workgroupSize;
   }
 
   public static async create(
     device: GPUDevice,
     canvasFormat: GPUTextureFormat,
     requestedCapacity: number,
+    requestedWorkgroupSize = SIMULATION_WORKGROUP_SIZE,
   ): Promise<StaticSwarmRenderer> {
     const capacity = Math.max(1, Math.min(STATIC_RENDERER_MAX_INSTANCES, requestedCapacity));
     const createdBuffers: GPUBuffer[] = [];
+    const workgroupSize = requestedWorkgroupSize === 256 ? 256 : SIMULATION_WORKGROUP_SIZE;
+    if (
+      workgroupSize > device.limits.maxComputeInvocationsPerWorkgroup ||
+      workgroupSize > device.limits.maxComputeWorkgroupSizeX
+    ) {
+      throw new RangeError(`Workgroup size ${String(workgroupSize)} exceeds device limits`);
+    }
     device.pushErrorScope('validation');
     let scopePopped = false;
     try {
@@ -335,7 +352,11 @@ export class StaticSwarmRenderer {
         device.createComputePipelineAsync({
           label: 'GPU simulation pipeline',
           layout: computePipelineLayout,
-          compute: { module: simulationModule, entryPoint: 'simulate' },
+          compute: {
+            module: simulationModule,
+            entryPoint: 'simulate',
+            constants: { WORKGROUP_SIZE: workgroupSize },
+          },
         }),
       ]);
 
@@ -395,6 +416,7 @@ export class StaticSwarmRenderer {
         backgroundPipeline,
         swarmPipeline,
         simulationPipeline,
+        workgroupSize,
       );
     } catch (error) {
       if (!scopePopped) await device.popErrorScope();
@@ -457,7 +479,7 @@ export class StaticSwarmRenderer {
     const computePass = encoder.beginComputePass(this.#computePassDescriptor);
     computePass.setPipeline(this.#simulationPipeline);
     computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
-    computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / SIMULATION_WORKGROUP_SIZE));
+    computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
     computePass.end();
 
     const renderPass = encoder.beginRenderPass(this.#renderPassDescriptor);
@@ -518,6 +540,104 @@ export class StaticSwarmRenderer {
     } finally {
       positionReadback.destroy();
       velocityReadback.destroy();
+    }
+  }
+
+  public async measureGpuFrame(
+    canvasContext: GPUCanvasContext,
+    camera: OrbitCamera,
+    frame: SimulationFrame,
+    viewportWidth: number,
+    viewportHeight: number,
+    instanceCount: number,
+    devicePixelRatio: number,
+  ): Promise<GpuFrameTiming> {
+    if (!this.#device.features.has('timestamp-query')) {
+      throw new Error('GPU timestamp queries are unavailable on this device');
+    }
+    const safeInstanceCount = Math.min(this.capacity, Math.max(0, Math.floor(instanceCount)));
+    writeGlobalUniforms(
+      this.#uniformStaging,
+      camera,
+      frame.timeSeconds,
+      viewportWidth,
+      viewportHeight,
+      safeInstanceCount,
+      devicePixelRatio,
+      frame,
+    );
+    this.#device.queue.writeBuffer(
+      this.#uniformBuffer,
+      0,
+      this.#uniformStaging.buffer,
+      this.#uniformStaging.byteOffset,
+      GLOBAL_UNIFORM_USED_BYTES,
+    );
+    const querySet = this.#device.createQuerySet({ type: 'timestamp', count: 4 });
+    const resolveBuffer = this.#device.createBuffer({
+      label: 'Explicit benchmark timestamp resolve',
+      size: 32,
+      usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+    });
+    const readbackBuffer = this.#device.createBuffer({
+      label: 'Explicit benchmark timestamp readback',
+      size: 32,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    try {
+      const sourceParity = this.#stateParity;
+      const destinationParity = sourceParity === 0 ? 1 : 0;
+      this.#colorAttachment.view = canvasContext
+        .getCurrentTexture()
+        .createView(this.#canvasViewDescriptor);
+      const encoder = this.#device.createCommandEncoder({ label: 'Explicit benchmark frame' });
+      const computePass = encoder.beginComputePass({
+        label: 'Timed simulation pass',
+        timestampWrites: {
+          querySet,
+          beginningOfPassWriteIndex: 0,
+          endOfPassWriteIndex: 1,
+        },
+      });
+      computePass.setPipeline(this.#simulationPipeline);
+      computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
+      computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+      computePass.end();
+      const renderPass = encoder.beginRenderPass({
+        ...this.#renderPassDescriptor,
+        timestampWrites: {
+          querySet,
+          beginningOfPassWriteIndex: 2,
+          endOfPassWriteIndex: 3,
+        },
+      });
+      renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
+      renderPass.setPipeline(this.#backgroundPipeline);
+      renderPass.draw(3);
+      renderPass.setPipeline(this.#swarmPipeline);
+      renderPass.setVertexBuffer(0, this.#vertexBuffer);
+      renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
+      renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
+      renderPass.end();
+      encoder.resolveQuerySet(querySet, 0, 4, resolveBuffer, 0);
+      encoder.copyBufferToBuffer(resolveBuffer, 0, readbackBuffer, 0, 32);
+      this.#device.queue.submit([encoder.finish()]);
+      this.#stateParity = destinationParity;
+      await readbackBuffer.mapAsync(GPUMapMode.READ);
+      const timestamps = new BigUint64Array(readbackBuffer.getMappedRange());
+      const computeStart = timestamps[0] ?? 0n;
+      const computeEnd = timestamps[1] ?? 0n;
+      const renderStart = timestamps[2] ?? 0n;
+      const renderEnd = timestamps[3] ?? 0n;
+      return {
+        computeMs: Number(computeEnd - computeStart) / 1_000_000,
+        renderMs: Number(renderEnd - renderStart) / 1_000_000,
+        totalMs: Number(renderEnd - computeStart) / 1_000_000,
+      };
+    } finally {
+      querySet.destroy();
+      resolveBuffer.destroy();
+      readbackBuffer.destroy();
     }
   }
 

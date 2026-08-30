@@ -33,10 +33,11 @@ export async function createGpuContext(
   const capabilities = captureAdapterCapabilities(adapter, options.requestedInstances);
   let device: GPUDevice;
   try {
-    // Phase 01 records optional features but requests none until a pass consumes one.
+    const requiredFeatures: GPUFeatureName[] = [];
+    if (adapter.features.has('timestamp-query')) requiredFeatures.push('timestamp-query');
     device = await adapter.requestDevice({
       label: 'SwarmGPU device',
-      requiredFeatures: [],
+      requiredFeatures,
       requiredLimits: {},
     });
   } catch (error) {

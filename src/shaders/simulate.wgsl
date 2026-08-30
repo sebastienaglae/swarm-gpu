@@ -62,7 +62,9 @@ fn recoverVelocity(seed: u32) -> vec4<f32> {
   return vec4<f32>(-sin(angle) * 2.0, 0.0, cos(angle) * 2.0, angle);
 }
 
-@compute @workgroup_size(128)
+override WORKGROUP_SIZE: u32 = 128u;
+
+@compute @workgroup_size(WORKGROUP_SIZE)
 fn simulate(@builtin(global_invocation_id) invocation: vec3<u32>) {
   let instanceId = invocation.x;
   let instanceCount = u32(globals.simulationA.y);

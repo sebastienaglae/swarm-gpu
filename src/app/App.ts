@@ -88,6 +88,8 @@ export class App {
   #smoothedFrameInterval = 16.67;
   #lastDiagnosticsTimestamp = 0;
   readonly #fixedTimestep = new URLSearchParams(location.search).get('benchmark') === '1';
+  readonly #requestedWorkgroupSize =
+    new URLSearchParams(location.search).get('workgroup') === '256' ? 256 : 128;
 
   readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
@@ -269,6 +271,7 @@ export class App {
         gpu.device,
         gpu.canvasFormat,
         gpu.capabilities.capacity.maxInstances,
+        this.#requestedWorkgroupSize,
       );
       if (generation !== this.#generation) {
         renderer.destroy();
@@ -425,6 +428,35 @@ export class App {
       }
     }
     return { fixtureCount: count, maxAbsoluteError };
+  }
+
+  public async measureGpuFrameForDevelopment(): Promise<{
+    readonly computeMs: number;
+    readonly renderMs: number;
+    readonly totalMs: number;
+  }> {
+    const renderer = this.#renderer;
+    const gpu = this.#gpu;
+    if (
+      !import.meta.env.DEV ||
+      this.state.current !== 'paused' ||
+      renderer === undefined ||
+      gpu === undefined ||
+      !this.#canvasSize.drawable
+    ) {
+      throw new Error('GPU timing is available only in development while paused');
+    }
+    this.#simulationFrame.deltaSeconds = FIXED_BENCHMARK_DELTA_SECONDS;
+    this.#simulationFrame.attractorStrength = 0;
+    return renderer.measureGpuFrame(
+      gpu.canvasContext,
+      this.#camera,
+      this.#simulationFrame,
+      this.#canvasSize.width,
+      this.#canvasSize.height,
+      this.#instanceCount,
+      window.devicePixelRatio,
+    );
   }
 
   public dispose(): void {

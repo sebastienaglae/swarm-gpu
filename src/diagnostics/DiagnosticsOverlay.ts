@@ -68,7 +68,7 @@ export class DiagnosticsOverlay {
 
   public setRenderer(renderer: StaticSwarmRenderer, instanceCount: number): void {
     this.#draws.value = String(renderer.drawCalls);
-    this.#dispatches.value = String(renderer.computeDispatches);
+    this.#dispatches.value = `${String(renderer.computeDispatches)} @ ${String(renderer.workgroupSize)} threads`;
     this.#memory.value = `${(renderer.estimatedStateBytes / 1_048_576).toFixed(1)} MiB estimated`;
     this.#gpu.value = 'not measured (Phase 06)';
     this.setPopulation(instanceCount, renderer.triangleCount);

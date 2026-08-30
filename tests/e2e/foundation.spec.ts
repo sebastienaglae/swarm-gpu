@@ -47,6 +47,11 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       });
       return {
         label: 'Mock WebGPU device',
+        features: new Set(['timestamp-query']),
+        limits: {
+          maxComputeInvocationsPerWorkgroup: 256,
+          maxComputeWorkgroupSizeX: 256,
+        },
         queue: {
           submit: () => {
             submitCount += 1;
@@ -199,7 +204,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#metric-timestamp')).toHaveText('available');
   await expect(page.locator('#metric-canvas')).not.toHaveText('0 × 0');
   await expect(page.locator('#metric-instances')).toHaveText('500,000');
-  await expect(page.locator('#metric-dispatches')).toHaveText('1');
+  await expect(page.locator('#metric-dispatches')).toHaveText('1 @ 128 threads');
   await page.locator('#population-select').selectOption('100000');
   await expect(page.locator('#metric-instances')).toHaveText('100,000');
   await expect
