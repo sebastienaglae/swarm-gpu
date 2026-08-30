@@ -415,7 +415,13 @@ export class App {
   }
 
   async #handleDeviceLost(generation: number, info: GPUDeviceLostInfo): Promise<void> {
-    if (generation !== this.#generation || this.state.current === 'disposed') return;
+    if (
+      generation !== this.#generation ||
+      this.state.current === 'disposed' ||
+      this.state.current === 'failed' ||
+      this.state.current === 'initializing'
+    )
+      return;
     console.error(`[SwarmGPU] Device lost (${info.reason})`, info.message);
     this.#cancelFrame();
     this.state.transition('recovering');

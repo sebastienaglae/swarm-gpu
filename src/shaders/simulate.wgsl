@@ -107,8 +107,9 @@ fn simulate(@builtin(global_invocation_id) invocation: vec3<u32>) {
   }
 
   acceleration = safeClampVector(acceleration, maxAcceleration);
-  velocityState.xyz = safeClampVector(velocityState.xyz + acceleration * deltaTime, maxSpeed);
-  positionState.xyz += velocityState.xyz * deltaTime;
+  let nextVelocity = safeClampVector(velocityState.xyz + acceleration * deltaTime, maxSpeed);
+  velocityState = vec4<f32>(nextVelocity, velocityState.w);
+  positionState = vec4<f32>(positionState.xyz + nextVelocity * deltaTime, positionState.w);
   velocityState.w += deltaTime * 0.7;
 
   if (!finiteLike(positionState.xyz) || !finiteLike(velocityState.xyz) || velocityState.w != velocityState.w) {
