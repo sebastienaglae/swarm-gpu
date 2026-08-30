@@ -53,12 +53,14 @@ fn cull(@builtin(global_invocation_id) invocation: vec3<u32>) {
   let viewPosition = globals.view * vec4<f32>(state.xyz, 1.0);
   let viewDepth = max(0.0001, -viewPosition.z);
   let projectedRadius = radius * globals.projection[1][1] * globals.viewportAndCount.y * 0.5 / viewDepth;
+  let transitionHash = f32((instanceId * 1664525u + 1013904223u) >> 8u) / 16777215.0;
+  let transitionScale = mix(0.92, 1.08, transitionHash);
   var lod = 2u;
-  if (projectedRadius >= globals.lodParameters.x) {
+  if (projectedRadius >= globals.lodParameters.x * transitionScale) {
     lod = 0u;
-  } else if (projectedRadius >= globals.lodParameters.y) {
+  } else if (projectedRadius >= globals.lodParameters.y * transitionScale) {
     lod = 1u;
-  } else if (projectedRadius < globals.lodParameters.z) {
+  } else if (projectedRadius < globals.lodParameters.z * transitionScale) {
     return;
   }
   if (globals.lodParameters.w >= 0.0) {

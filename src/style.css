@@ -173,6 +173,36 @@ button:focus-visible {
   accent-color: #22d3ee;
 }
 
+.lod-controls {
+  position: relative;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(103 232 249 / 25%);
+  border-radius: 0.55rem;
+  color: #9db2c3;
+  font-size: 0.78rem;
+}
+
+.lod-controls[open] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  gap: 0.55rem;
+}
+
+.lod-controls summary {
+  cursor: pointer;
+}
+
+.lod-controls input[type='number'] {
+  width: 4rem;
+  color: #e7fbff;
+  background: rgb(17 52 70 / 92%);
+  border: 1px solid rgb(103 232 249 / 35%);
+}
+
+.capture-mode .controls > :not(#capture-button) {
+  display: none;
+}
+
 [hidden] {
   display: none !important;
 }

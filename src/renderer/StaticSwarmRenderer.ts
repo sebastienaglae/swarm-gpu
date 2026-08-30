@@ -61,6 +61,7 @@ export function estimateSimulationStateBytes(capacity: number): number {
 
 export interface SimulationFrame extends SimulationUniformValues {
   readonly timeSeconds: number;
+  readonly backgroundEnabled?: number;
 }
 
 export interface SimulationStateCapture {
@@ -690,8 +691,10 @@ export class StaticSwarmRenderer {
 
     const renderPass = encoder.beginRenderPass(this.#renderPassDescriptor);
     renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
-    renderPass.setPipeline(this.#backgroundPipeline);
-    renderPass.draw(3);
+    if ((frame.backgroundEnabled ?? 1) > 0.5) {
+      renderPass.setPipeline(this.#backgroundPipeline);
+      renderPass.draw(3);
+    }
     renderPass.setVertexBuffer(0, this.#vertexBuffer);
     renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
     if (this.indirectRendering) {
@@ -952,8 +955,10 @@ export class StaticSwarmRenderer {
         },
       });
       renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
-      renderPass.setPipeline(this.#backgroundPipeline);
-      renderPass.draw(3);
+      if ((frame.backgroundEnabled ?? 1) > 0.5) {
+        renderPass.setPipeline(this.#backgroundPipeline);
+        renderPass.draw(3);
+      }
       renderPass.setVertexBuffer(0, this.#vertexBuffer);
       renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
       if (this.indirectRendering) {

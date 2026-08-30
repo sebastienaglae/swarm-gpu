@@ -48,6 +48,18 @@ export class App {
   readonly #interactionMode: HTMLSelectElement;
   readonly #interactionStrength: HTMLInputElement;
   readonly #interactionRadius: HTMLInputElement;
+  readonly #renderScaleSelect: HTMLSelectElement;
+  readonly #lodModeSelect: HTMLSelectElement;
+  readonly #lodNearInput: HTMLInputElement;
+  readonly #lodMidInput: HTMLInputElement;
+  readonly #lodFarInput: HTMLInputElement;
+  readonly #lodVisualizeInput: HTMLInputElement;
+  readonly #backgroundInput: HTMLInputElement;
+  readonly #fogInput: HTMLInputElement;
+  readonly #markerInput: HTMLInputElement;
+  readonly #captureButton: HTMLButtonElement;
+  readonly #benchmarkButton: HTMLButtonElement;
+  readonly #lodControls: HTMLDetailsElement;
   readonly #input = new InputState();
   readonly #cameraInput = new Float32Array(3);
   readonly #camera = new OrbitCamera();
@@ -67,6 +79,10 @@ export class App {
     lodMidPixels: number;
     lodFarPixels: number;
     lodMode: number;
+    lodVisualization: number;
+    fogEnabled: number;
+    markerEnabled: number;
+    backgroundEnabled: number;
   } = {
     timeSeconds: 0,
     deltaSeconds: 0,
@@ -87,6 +103,10 @@ export class App {
     lodMidPixels: 2,
     lodFarPixels: 0.35,
     lodMode: -1,
+    lodVisualization: 0,
+    fogEnabled: 1,
+    markerEnabled: 1,
+    backgroundEnabled: 1,
   };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
   readonly #resizeObserver: ResizeObserver;
@@ -102,6 +122,8 @@ export class App {
   #instanceCount = 500_000;
   #lastFrameTimestamp = 0;
   #smoothedFrameInterval = 16.67;
+  #renderScale = 1;
+  #captureMode = false;
   #lastDiagnosticsTimestamp = 0;
   readonly #fixedTimestep = new URLSearchParams(location.search).get('benchmark') === '1';
   readonly #requestedWorkgroupSize =
@@ -200,6 +222,47 @@ export class App {
     this.#diagnostics.setPopulation(this.#instanceCount, renderer.triangleCount);
   };
 
+  readonly #onRenderScaleChange = (): void => {
+    const scale = Number(this.#renderScaleSelect.value);
+    if (![0.5, 0.75, 1].includes(scale)) return;
+    this.#renderScale = scale;
+    this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
+  };
+
+  readonly #onLodControlsChange = (): void => {
+    const near = Number(this.#lodNearInput.value);
+    const mid = Number(this.#lodMidInput.value);
+    const far = Number(this.#lodFarInput.value);
+    if (
+      Number.isFinite(near) &&
+      Number.isFinite(mid) &&
+      Number.isFinite(far) &&
+      near > mid &&
+      mid > far
+    ) {
+      this.#simulationFrame.lodNearPixels = near;
+      this.#simulationFrame.lodMidPixels = mid;
+      this.#simulationFrame.lodFarPixels = far;
+    }
+    this.#simulationFrame.lodMode = Number(this.#lodModeSelect.value);
+    this.#simulationFrame.lodVisualization = this.#lodVisualizeInput.checked ? 1 : 0;
+    this.#simulationFrame.backgroundEnabled = this.#backgroundInput.checked ? 1 : 0;
+    this.#simulationFrame.fogEnabled = this.#fogInput.checked ? 1 : 0;
+    this.#simulationFrame.markerEnabled = this.#markerInput.checked ? 1 : 0;
+  };
+
+  readonly #onCaptureMode = (): void => {
+    this.#captureMode = !this.#captureMode;
+    document.documentElement.classList.toggle('capture-mode', this.#captureMode);
+    this.#captureButton.textContent = this.#captureMode ? 'Exit capture' : 'Capture mode';
+  };
+
+  readonly #onBenchmarkMode = (): void => {
+    const url = new URL(location.href);
+    url.searchParams.set('benchmark', '1');
+    location.assign(url);
+  };
+
   readonly #onWindowResize = (): void => {
     this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
   };
@@ -230,6 +293,19 @@ export class App {
     this.#interactionMode = requireElement(root, '#interaction-mode', HTMLSelectElement);
     this.#interactionStrength = requireElement(root, '#interaction-strength', HTMLInputElement);
     this.#interactionRadius = requireElement(root, '#interaction-radius', HTMLInputElement);
+    this.#renderScaleSelect = requireElement(root, '#render-scale', HTMLSelectElement);
+    this.#lodModeSelect = requireElement(root, '#lod-mode', HTMLSelectElement);
+    this.#lodNearInput = requireElement(root, '#lod-near', HTMLInputElement);
+    this.#lodMidInput = requireElement(root, '#lod-mid', HTMLInputElement);
+    this.#lodFarInput = requireElement(root, '#lod-far', HTMLInputElement);
+    this.#lodVisualizeInput = requireElement(root, '#lod-visualize', HTMLInputElement);
+    this.#backgroundInput = requireElement(root, '#background-toggle', HTMLInputElement);
+    this.#fogInput = requireElement(root, '#fog-toggle', HTMLInputElement);
+    this.#markerInput = requireElement(root, '#marker-toggle', HTMLInputElement);
+    this.#captureButton = requireElement(root, '#capture-button', HTMLButtonElement);
+    this.#benchmarkButton = requireElement(root, '#benchmark-button', HTMLButtonElement);
+    this.#lodControls = requireElement(root, '#lod-controls', HTMLDetailsElement);
+    this.#lodControls.hidden = !import.meta.env.DEV;
     this.#resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry !== undefined) this.#resize(entry.contentRect.width, entry.contentRect.height);
@@ -624,6 +700,21 @@ export class App {
     this.#pauseButton.addEventListener('click', this.#onPauseToggle);
     this.#resetButton.addEventListener('click', this.#onReset);
     this.#populationSelect.addEventListener('change', this.#onPopulationChange);
+    this.#renderScaleSelect.addEventListener('change', this.#onRenderScaleChange);
+    for (const control of [
+      this.#lodModeSelect,
+      this.#lodNearInput,
+      this.#lodMidInput,
+      this.#lodFarInput,
+      this.#lodVisualizeInput,
+      this.#backgroundInput,
+      this.#fogInput,
+      this.#markerInput,
+    ]) {
+      control.addEventListener('change', this.#onLodControlsChange);
+    }
+    this.#captureButton.addEventListener('click', this.#onCaptureMode);
+    this.#benchmarkButton.addEventListener('click', this.#onBenchmarkMode);
     window.addEventListener('resize', this.#onWindowResize);
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
   }
@@ -636,13 +727,33 @@ export class App {
     this.#pauseButton.removeEventListener('click', this.#onPauseToggle);
     this.#resetButton.removeEventListener('click', this.#onReset);
     this.#populationSelect.removeEventListener('change', this.#onPopulationChange);
+    this.#renderScaleSelect.removeEventListener('change', this.#onRenderScaleChange);
+    for (const control of [
+      this.#lodModeSelect,
+      this.#lodNearInput,
+      this.#lodMidInput,
+      this.#lodFarInput,
+      this.#lodVisualizeInput,
+      this.#backgroundInput,
+      this.#fogInput,
+      this.#markerInput,
+    ]) {
+      control.removeEventListener('change', this.#onLodControlsChange);
+    }
+    this.#captureButton.removeEventListener('click', this.#onCaptureMode);
+    this.#benchmarkButton.removeEventListener('click', this.#onBenchmarkMode);
     window.removeEventListener('resize', this.#onWindowResize);
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
   #resize(cssWidth: number, cssHeight: number): void {
     const maxDimension = this.#gpu?.capabilities.limits.maxTextureDimension2D ?? 8192;
-    const size = computeCanvasSize(cssWidth, cssHeight, window.devicePixelRatio, maxDimension);
+    const size = computeCanvasSize(
+      cssWidth,
+      cssHeight,
+      window.devicePixelRatio * this.#renderScale,
+      maxDimension,
+    );
     this.#canvasSize = size;
     this.#diagnostics.setCanvasSize(size);
     if (!size.drawable) return;

@@ -63,6 +63,41 @@
           Radius
           <input id="interaction-radius" type="range" min="4" max="60" step="1" value="24" />
         </label>
+        <label>
+          Render scale
+          <select id="render-scale">
+            <option value="0.5">50%</option>
+            <option value="0.75">75%</option>
+            <option value="1" selected>100%</option>
+          </select>
+        </label>
+        <details id="lod-controls" class="lod-controls">
+          <summary>LOD debug</summary>
+          <label
+            >Mode
+            <select id="lod-mode">
+              <option value="-1" selected>Auto</option>
+              <option value="0">Near only</option>
+              <option value="1">Mid only</option>
+              <option value="2">Far only</option>
+            </select>
+          </label>
+          <label
+            >Near px <input id="lod-near" type="number" min="2" max="32" step="0.5" value="8"
+          /></label>
+          <label
+            >Mid px <input id="lod-mid" type="number" min="0.5" max="16" step="0.25" value="2"
+          /></label>
+          <label
+            >Far px <input id="lod-far" type="number" min="0.05" max="4" step="0.05" value="0.35"
+          /></label>
+          <label><input id="lod-visualize" type="checkbox" /> LOD colors</label>
+          <label><input id="background-toggle" type="checkbox" checked /> Background</label>
+          <label><input id="fog-toggle" type="checkbox" checked /> Fog</label>
+          <label><input id="marker-toggle" type="checkbox" checked /> Attractor marker</label>
+        </details>
+        <button id="capture-button" type="button">Capture mode</button>
+        <button id="benchmark-button" type="button">Benchmark mode</button>
         <button id="pause-button" type="button">Pause</button>
         <button id="reset-button" type="button">Reset</button>
       </nav>

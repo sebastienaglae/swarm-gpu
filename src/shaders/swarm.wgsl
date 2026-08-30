@@ -10,6 +10,7 @@ struct Globals {
   simulationC: vec4<f32>,
   frustumPlanes: array<vec4<f32>, 6>,
   lodParameters: vec4<f32>,
+  visualParameters: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -51,20 +52,17 @@ fn vertexMain(input: VertexInput, @builtin(instance_index) instanceId: u32) -> V
   let appearance = instanceAppearance[sourceId];
   let velocity = instanceVelocities[sourceId].xyz;
   let storedHeading = bitcast<f32>(appearance.y);
-  let heading = select(storedHeading, atan2(velocity.x, velocity.z), dot(velocity.xz, velocity.xz) > 0.0001);
-  let sine = sin(heading);
-  let cosine = cos(heading);
+  var forward = vec3<f32>(sin(storedHeading), 0.0, cos(storedHeading));
+  let speedSquared = dot(velocity, velocity);
+  if (speedSquared > 0.0001) {
+    forward = velocity * inverseSqrt(speedSquared);
+  }
+  let referenceUp = select(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), abs(forward.y) > 0.98);
+  let right = normalize(cross(referenceUp, forward));
+  let localUp = normalize(cross(forward, right));
   let scaled = input.position * state.w;
-  let rotatedPosition = vec3<f32>(
-    cosine * scaled.x + sine * scaled.z,
-    scaled.y,
-    -sine * scaled.x + cosine * scaled.z
-  );
-  let rotatedNormal = normalize(vec3<f32>(
-    cosine * input.normal.x + sine * input.normal.z,
-    input.normal.y,
-    -sine * input.normal.x + cosine * input.normal.z
-  ));
+  let rotatedPosition = right * scaled.x + localUp * scaled.y + forward * scaled.z;
+  let rotatedNormal = normalize(right * input.normal.x + localUp * input.normal.y + forward * input.normal.z);
   var worldPosition = state.xyz + rotatedPosition;
   var worldNormal = rotatedNormal;
   if (LOD_INDEX == 2u) {
@@ -80,6 +78,14 @@ fn vertexMain(input: VertexInput, @builtin(instance_index) instanceId: u32) -> V
   output.worldPosition = worldPosition;
   output.worldNormal = worldNormal;
   output.color = unpackRgb(appearance.x);
+  if (globals.visualParameters.x > 0.5) {
+    let lodColors = array<vec3<f32>, 3>(
+      vec3<f32>(0.15, 0.95, 1.0),
+      vec3<f32>(1.0, 0.72, 0.12),
+      vec3<f32>(1.0, 0.18, 0.72)
+    );
+    output.color = lodColors[LOD_INDEX];
+  }
   output.variation = f32(appearance.w & 3u) / 3.0;
   return output;
 }
@@ -95,7 +101,7 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
   let litColor = input.color * (0.28 + diffuse * 0.72) + input.color * facing * 0.38;
   let farGlow = select(vec3<f32>(0.0), input.color * 0.7, LOD_INDEX == 2u);
   let distanceToCamera = distance(globals.cameraAndTime.xyz, input.worldPosition);
-  let fog = smoothstep(90.0, 175.0, distanceToCamera);
+  let fog = smoothstep(90.0, 175.0, distanceToCamera) * globals.visualParameters.y;
   let fogColor = vec3<f32>(0.008, 0.018, 0.035);
   return vec4<f32>(mix(litColor + farGlow, fogColor, fog), 1.0);
 }

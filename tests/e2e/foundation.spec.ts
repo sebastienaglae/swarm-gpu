@@ -267,6 +267,22 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     .toBe(0);
   await page.setViewportSize({ width: 900, height: 600 });
   await expect(page.locator('#metric-canvas')).toHaveText('900 × 600');
+  await page.locator('#render-scale').selectOption('0.5');
+  await expect(page.locator('#metric-canvas')).toHaveText('450 × 300');
+  await page.locator('#render-scale').selectOption('1');
+  await expect(page.locator('#metric-canvas')).toHaveText('900 × 600');
+  await page.locator('#lod-controls').evaluate((details) => {
+    details.open = true;
+  });
+  await page.locator('#lod-mode').selectOption('2');
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_DEVICE_REQUEST_COUNT__')))
+    .toBe(1);
+  await page.locator('#capture-button').click();
+  await expect(page.locator('#population-select')).toBeHidden();
+  await expect(page.locator('#capture-button')).toHaveText('Exit capture');
+  await page.locator('#capture-button').click();
+  await expect(page.locator('#population-select')).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_LAST_TEXTURE_SIZE__')))
     .toBe('900x600');
