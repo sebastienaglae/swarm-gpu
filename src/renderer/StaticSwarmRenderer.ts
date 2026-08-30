@@ -68,6 +68,8 @@ export interface SimulationStateCapture {
 }
 
 export interface GpuFrameTiming {
+  readonly simulationMs: number;
+  readonly cullingMs: number;
   readonly computeMs: number;
   readonly renderMs: number;
   readonly totalMs: number;
@@ -828,15 +830,17 @@ export class StaticSwarmRenderer {
       this.#uniformStaging.byteOffset,
       GLOBAL_UNIFORM_USED_BYTES,
     );
-    const querySet = this.#device.createQuerySet({ type: 'timestamp', count: 4 });
+    const queryCount = this.indirectRendering ? 6 : 4;
+    const queryBytes = queryCount * BigUint64Array.BYTES_PER_ELEMENT;
+    const querySet = this.#device.createQuerySet({ type: 'timestamp', count: queryCount });
     const resolveBuffer = this.#device.createBuffer({
       label: 'Explicit benchmark timestamp resolve',
-      size: 32,
+      size: queryBytes,
       usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
     });
     const readbackBuffer = this.#device.createBuffer({
       label: 'Explicit benchmark timestamp readback',
-      size: 32,
+      size: queryBytes,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
     try {
@@ -846,6 +850,10 @@ export class StaticSwarmRenderer {
         .getCurrentTexture()
         .createView(this.#canvasViewDescriptor);
       const encoder = this.#device.createCommandEncoder({ label: 'Explicit benchmark frame' });
+      if (this.indirectRendering) {
+        encoder.clearBuffer(this.#visibilityCounterBuffer, 0, 8);
+        encoder.clearBuffer(this.#indirectBuffer);
+      }
       const computePass = encoder.beginComputePass({
         label: 'Timed simulation pass',
         timestampWrites: {
@@ -858,12 +866,30 @@ export class StaticSwarmRenderer {
       computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
       computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
       computePass.end();
+      if (this.indirectRendering) {
+        const cullingPass = encoder.beginComputePass({
+          label: 'Timed culling and indirect finalization pass',
+          timestampWrites: {
+            querySet,
+            beginningOfPassWriteIndex: 2,
+            endOfPassWriteIndex: 3,
+          },
+        });
+        cullingPass.setPipeline(this.#cullingPipeline);
+        cullingPass.setBindGroup(0, this.#cullBindGroups[destinationParity]);
+        cullingPass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+        cullingPass.setPipeline(this.#finalizePipeline);
+        cullingPass.setBindGroup(0, this.#finalizeBindGroup);
+        cullingPass.dispatchWorkgroups(1);
+        cullingPass.end();
+      }
+      const renderStartIndex = this.indirectRendering ? 4 : 2;
       const renderPass = encoder.beginRenderPass({
         ...this.#renderPassDescriptor,
         timestampWrites: {
           querySet,
-          beginningOfPassWriteIndex: 2,
-          endOfPassWriteIndex: 3,
+          beginningOfPassWriteIndex: renderStartIndex,
+          endOfPassWriteIndex: renderStartIndex + 1,
         },
       });
       renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
@@ -872,20 +898,27 @@ export class StaticSwarmRenderer {
       renderPass.setPipeline(this.#swarmPipeline);
       renderPass.setVertexBuffer(0, this.#vertexBuffer);
       renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
-      renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
+      if (this.indirectRendering) renderPass.drawIndexedIndirect(this.#indirectBuffer, 0);
+      else renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
       renderPass.end();
-      encoder.resolveQuerySet(querySet, 0, 4, resolveBuffer, 0);
-      encoder.copyBufferToBuffer(resolveBuffer, 0, readbackBuffer, 0, 32);
+      encoder.resolveQuerySet(querySet, 0, queryCount, resolveBuffer, 0);
+      encoder.copyBufferToBuffer(resolveBuffer, 0, readbackBuffer, 0, queryBytes);
       this.#device.queue.submit([encoder.finish()]);
       this.#stateParity = destinationParity;
       await readbackBuffer.mapAsync(GPUMapMode.READ);
       const timestamps = new BigUint64Array(readbackBuffer.getMappedRange());
       const computeStart = timestamps[0] ?? 0n;
       const computeEnd = timestamps[1] ?? 0n;
-      const renderStart = timestamps[2] ?? 0n;
-      const renderEnd = timestamps[3] ?? 0n;
+      const cullingStart = this.indirectRendering ? (timestamps[2] ?? 0n) : computeEnd;
+      const cullingEnd = this.indirectRendering ? (timestamps[3] ?? 0n) : computeEnd;
+      const renderStart = timestamps[renderStartIndex] ?? 0n;
+      const renderEnd = timestamps[renderStartIndex + 1] ?? 0n;
+      const simulationMs = Number(computeEnd - computeStart) / 1_000_000;
+      const cullingMs = Number(cullingEnd - cullingStart) / 1_000_000;
       return {
-        computeMs: Number(computeEnd - computeStart) / 1_000_000,
+        simulationMs,
+        cullingMs,
+        computeMs: simulationMs + cullingMs,
         renderMs: Number(renderEnd - renderStart) / 1_000_000,
         totalMs: Number(renderEnd - computeStart) / 1_000_000,
       };

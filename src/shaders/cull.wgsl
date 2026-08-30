@@ -44,7 +44,9 @@ fn cull(@builtin(global_invocation_id) invocation: vec3<u32>) {
   }
   let state = positions[instanceId];
   let radius = max(0.0, state.w) * 1.5 * 1.08;
-  if (!sphereVisible(state.xyz, radius)) {
+  let benchmarkVisible = f32(instanceId) < f32(activeCount) * globals.simulationC.y;
+  let visible = select(sphereVisible(state.xyz, radius), benchmarkVisible, globals.simulationC.z > 0.5);
+  if (!visible) {
     return;
   }
   let destination = atomicAdd(&counters.visibleCount, 1u);

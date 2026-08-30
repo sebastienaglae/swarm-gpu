@@ -60,6 +60,8 @@ export class App {
     attractorStrength: number;
     attractorRadius: number;
     frameIndex: number;
+    benchmarkVisibilityFraction: number;
+    benchmarkVisibilityEnabled: number;
   } = {
     timeSeconds: 0,
     deltaSeconds: 0,
@@ -74,6 +76,8 @@ export class App {
     noiseStrength: SIMULATION_DEFAULTS.noiseStrength,
     attractorRadius: SIMULATION_DEFAULTS.attractorRadius,
     frameIndex: 0,
+    benchmarkVisibilityFraction: 1,
+    benchmarkVisibilityEnabled: 0,
   };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
   readonly #resizeObserver: ResizeObserver;
@@ -94,6 +98,9 @@ export class App {
   readonly #requestedWorkgroupSize =
     new URLSearchParams(location.search).get('workgroup') === '256' ? 256 : 128;
   readonly #indirectRendering = new URLSearchParams(location.search).get('direct') !== '1';
+  readonly #benchmarkVisibilityPercent = Number(
+    new URLSearchParams(location.search).get('visibility') ?? '0',
+  );
 
   readonly #onFrame = (timestamp: number): void => {
     this.#frameHandle = undefined;
@@ -228,6 +235,10 @@ export class App {
   }
 
   public async initialize(): Promise<void> {
+    if ([10, 50, 100].includes(this.#benchmarkVisibilityPercent)) {
+      this.#simulationFrame.benchmarkVisibilityFraction = this.#benchmarkVisibilityPercent / 100;
+      this.#simulationFrame.benchmarkVisibilityEnabled = 1;
+    }
     const current = this.state.current;
     if (current === 'initializing' || current === 'ready' || current === 'running') return;
     if (current === 'disposed') return;
@@ -506,6 +517,8 @@ export class App {
   }
 
   public async measureGpuFrameForDevelopment(): Promise<{
+    readonly simulationMs: number;
+    readonly cullingMs: number;
     readonly computeMs: number;
     readonly renderMs: number;
     readonly totalMs: number;

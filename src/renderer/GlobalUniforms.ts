@@ -33,6 +33,8 @@ export interface SimulationUniformValues {
   readonly noiseStrength: number;
   readonly attractorRadius: number;
   readonly frameIndex: number;
+  readonly benchmarkVisibilityFraction?: number;
+  readonly benchmarkVisibilityEnabled?: number;
 }
 
 export function writeGlobalUniforms(
@@ -71,5 +73,7 @@ export function writeGlobalUniforms(
   target[GLOBAL_OFFSETS.simulationB + 2] = simulation.noiseStrength;
   target[GLOBAL_OFFSETS.simulationB + 3] = simulation.attractorRadius;
   target[GLOBAL_OFFSETS.simulationC] = simulation.frameIndex;
+  target[GLOBAL_OFFSETS.simulationC + 1] = simulation.benchmarkVisibilityFraction ?? 1;
+  target[GLOBAL_OFFSETS.simulationC + 2] = simulation.benchmarkVisibilityEnabled ?? 0;
   target.set(camera.frustumPlanes, GLOBAL_OFFSETS.frustumPlanes);
 }
