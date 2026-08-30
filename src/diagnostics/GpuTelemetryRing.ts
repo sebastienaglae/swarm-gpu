@@ -181,6 +181,13 @@ export class GpuTelemetryRing {
     };
   }
 
+  public resetSamples(): void {
+    this.#simulationSamples.reset();
+    this.#cullingSamples.reset();
+    this.#renderSamples.reset();
+    this.#totalSamples.reset();
+  }
+
   public destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;

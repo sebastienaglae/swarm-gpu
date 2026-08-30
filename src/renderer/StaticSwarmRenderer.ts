@@ -1030,6 +1030,7 @@ export class StaticSwarmRenderer {
 
   public resetPerformanceSamples(): void {
     this.#cpuFrameSamples.reset();
+    this.#telemetry?.resetSamples();
   }
 
   public captureCpuFrameSamples(): number[] {
