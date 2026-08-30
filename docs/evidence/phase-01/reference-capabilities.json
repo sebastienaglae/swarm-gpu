@@ -1,0 +1,57 @@
+{
+  "capturedAt": "2026-08-30T12:37:00Z",
+  "sourceCommit": "61c5db8",
+  "dirtyAtCapture": true,
+  "browser": "Google Chrome 151.0.7922.174 (headless, no experimental WebGPU flags)",
+  "operatingSystem": "Windows 11 Home 10.0.26200, build 26200",
+  "powerPreference": "high-performance",
+  "expectedPhysicalAdapter": "NVIDIA GeForce GTX 1650",
+  "adapterInfo": {
+    "vendor": "nvidia",
+    "architecture": "turing",
+    "device": "",
+    "description": ""
+  },
+  "features": [
+    "bgra8unorm-storage",
+    "clip-distances",
+    "core-features-and-limits",
+    "depth-clip-control",
+    "depth32float-stencil8",
+    "dual-source-blending",
+    "float32-blendable",
+    "float32-filterable",
+    "indirect-first-instance",
+    "primitive-index",
+    "rg11b10ufloat-renderable",
+    "shader-f16",
+    "subgroups",
+    "texture-component-swizzle",
+    "texture-compression-bc",
+    "texture-compression-bc-sliced-3d",
+    "texture-formats-tier1",
+    "texture-formats-tier2",
+    "timestamp-query"
+  ],
+  "limits": {
+    "maxBufferSize": 2147483648,
+    "maxStorageBufferBindingSize": 2147483644,
+    "maxComputeWorkgroupsPerDimension": 65535,
+    "maxTextureDimension2D": 16384,
+    "maxStorageBuffersPerShaderStage": 16,
+    "maxComputeInvocationsPerWorkgroup": 1024,
+    "maxComputeWorkgroupSizeX": 1024,
+    "minUniformBufferOffsetAlignment": 256,
+    "minStorageBufferOffsetAlignment": 256
+  },
+  "applicationProbe": {
+    "state": "running",
+    "canvasWidth": 1920,
+    "canvasHeight": 1080,
+    "derivedMaxInstances": 2917776,
+    "capacityLimitingFactor": "memory-budget",
+    "timestampQuerySupported": true,
+    "uncapturedGpuErrors": 0
+  },
+  "qualification": "Phase 01 capability and clear-pass smoke evidence only; not a performance benchmark. The OS inventory identifies the intended GTX 1650 while WebGPU exposes vendor and architecture but no device/description string."
+}

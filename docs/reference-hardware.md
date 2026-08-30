@@ -31,18 +31,19 @@ The application will request `high-performance` for reference benchmark scenario
 
 Browser versions change. These values identify the Phase 00 environment only and must not be copied into later reports automatically.
 
-## Required runtime WebGPU capture — pending Phase 01
+## Runtime WebGPU capture
 
-The following fields cannot be proven from operating-system inventory and remain deliberately unresolved:
+The Phase 01 [reference capability capture](evidence/phase-01/reference-capabilities.json) records a successful 1920×1080 clear-pass run in installed Chrome without experimental WebGPU flags. Chrome exposed vendor `nvidia`, architecture `turing`, optional features including `timestamp-query`, and the relevant buffer/compute/texture limits. It withheld device and description strings, so adapter identity remains correlated with the Windows inventory rather than falsely presented as a complete browser-provided identity.
 
-- Actual `GPUAdapter` selected for each power preference.
-- Adapter information exposed by the browser.
-- All supported WebGPU features, especially `timestamp-query`.
-- Relevant limits including maximum storage-buffer binding size, buffer size, storage buffers per shader stage, compute workgroup dimensions/invocations/storage, dispatch dimensions, texture dimensions, and uniform alignment.
-- Browser backend and any driver description exposed by the WebGPU implementation.
-- Successful capacity/allocation checks for 10k, 100k, 250k, 500k, and 1m.
+The following checks are now implemented and captured:
 
-Until a clean runtime capability export fills those fields, performance numbers are development observations and cannot be promoted to the README headline.
+- High-performance adapter acquisition and device creation.
+- Adapter information actually exposed by the browser.
+- Supported WebGPU features, including `timestamp-query`.
+- Relevant buffer, storage-binding, compute-dispatch/workgroup, texture, and alignment limits.
+- Safe derived capacity for every planned preset from 10k through 1m.
+
+Browser backend and driver description remain unavailable through the captured WebGPU surface and must never be invented. Performance numbers remain development observations until the Phase 06 benchmark contract is satisfied.
 
 ## Reference conditions
 

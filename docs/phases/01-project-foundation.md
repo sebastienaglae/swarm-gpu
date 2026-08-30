@@ -1,5 +1,10 @@
 # Phase 01 — Project foundation
 
+- Implementation status: Complete
+- Local qualification: Passed on 2026-08-30
+- Remote CI gate: Pending an authorized push
+- Owners: SwarmGPU maintainers
+
 ## Objective
 
 Create a strict, reproducible application foundation and a fault-aware WebGPU lifecycle before any high-volume rendering code exists.
@@ -37,42 +42,42 @@ Application lifecycle states are `idle -> initializing -> ready -> running -> pa
 
 ### Toolchain and repository hygiene
 
-- [ ] Initialize Git with an intentional default branch and add a permissive or copyleft license selected in Phase 00.
-- [ ] Pin Node through `.nvmrc` or equivalent and declare `engines` plus `packageManager`.
-- [ ] Configure Vite, strict TypeScript, ESLint, Prettier, Vitest, and Playwright.
-- [ ] Add scripts for `dev`, `build`, `preview`, `typecheck`, `lint`, `test`, `test:e2e`, and `check`.
-- [ ] Commit lockfile and configure automated dependency updates.
-- [ ] Add CI for clean install, checks, production build, and browser smoke test.
-- [ ] Add issue/PR templates, contributing guide, security policy, code of conduct, and changelog policy.
-- [ ] Ensure generated benchmark reports and captures have an explicit commit/ignore policy.
+- [x] Initialize Git with an intentional default branch and add a permissive or copyleft license selected in Phase 00.
+- [x] Pin Node through `.nvmrc` or equivalent and declare `engines` plus `packageManager`.
+- [x] Configure Vite, strict TypeScript, ESLint, Prettier, Vitest, and Playwright.
+- [x] Add scripts for `dev`, `build`, `preview`, `typecheck`, `lint`, `test`, `test:e2e`, and `check`.
+- [x] Commit lockfile and configure automated dependency updates.
+- [x] Add CI for clean install, checks, production build, and browser smoke test.
+- [x] Add issue/PR templates, contributing guide, security policy, code of conduct, and changelog policy.
+- [x] Ensure generated benchmark reports and captures have an explicit commit/ignore policy.
 
 ### WebGPU bootstrap
 
-- [ ] Check secure context, `navigator.gpu`, adapter acquisition, and device acquisition independently.
-- [ ] Request only features actually used; treat `timestamp-query` as optional.
-- [ ] Record adapter info when exposed, supported features, and relevant limits.
-- [ ] Clamp requested instance capacity against storage binding size, total allocation budget, and indirect-buffer requirements.
-- [ ] Configure canvas with the preferred format, explicit alpha mode, and device-pixel-aware sizing.
-- [ ] Install `device.lost` handling before rendering begins.
-- [ ] Install development uncaptured-error reporting and scoped error capture around pipeline/resource creation.
-- [ ] Label all GPU objects in development builds.
+- [x] Check secure context, `navigator.gpu`, adapter acquisition, and device acquisition independently.
+- [x] Request only features actually used; treat `timestamp-query` as optional.
+- [x] Record adapter info when exposed, supported features, and relevant limits.
+- [x] Clamp requested instance capacity against storage binding size, total allocation budget, and indirect-buffer requirements.
+- [x] Configure canvas with the preferred format, explicit alpha mode, and device-pixel-aware sizing.
+- [x] Install `device.lost` handling before rendering begins.
+- [x] Install development uncaptured-error reporting and scoped error capture around pipeline/resource creation.
+- [x] Label all GPU objects in development builds.
 
 ### Lifecycle and resource safety
 
-- [ ] Centralize animation-frame ownership and cancellation.
-- [ ] Make `start`, `pause`, `resume`, `reset`, and `dispose` idempotent.
-- [ ] Use `ResizeObserver`; ignore zero-sized canvases and cap dimensions against device limits.
-- [ ] Destroy replaced textures and large buffers deliberately.
-- [ ] Remove event listeners and observers during disposal.
-- [ ] Implement a recovery policy: show state, reacquire adapter/device, rebuild resources, and restart once safe.
-- [ ] Prevent recovery loops with bounded retry and a user-invoked retry button.
+- [x] Centralize animation-frame ownership and cancellation.
+- [x] Make `start`, `pause`, `resume`, `reset`, and `dispose` idempotent.
+- [x] Use `ResizeObserver`; ignore zero-sized canvases and cap dimensions against device limits.
+- [x] Destroy replaced textures and large buffers deliberately.
+- [x] Remove event listeners and observers during disposal.
+- [x] Implement a recovery policy: show state, reacquire adapter/device, rebuild resources, and restart once safe.
+- [x] Prevent recovery loops with bounded retry and a user-invoked retry button.
 
 ### Allocation discipline
 
-- [ ] Input events update a preallocated scalar/typed-array state rather than building event-derived vectors.
-- [ ] Camera and global uniform staging arrays are allocated once.
-- [ ] Establish a development-only allocation audit method using browser tooling and record its limitations.
-- [ ] Ban runtime shader string assembly; import static WGSL modules.
+- [x] Input events update a preallocated scalar/typed-array state rather than building event-derived vectors.
+- [x] Camera and global uniform staging arrays are allocated once.
+- [x] Establish a development-only allocation audit method using browser tooling and record its limitations.
+- [x] Ban runtime shader string assembly; import static WGSL modules.
 
 ## Validation plan
 
@@ -101,7 +106,18 @@ Application lifecycle states are `idle -> initializing -> ready -> running -> pa
 
 ## Evidence to retain
 
-- CI run link/badge, capability capture from reference hardware, unsupported-state screenshot, and lifecycle unit-test report.
+- [Phase 01 evidence index](../evidence/phase-01/README.md).
+- [Reference hardware capability capture](../evidence/phase-01/reference-capabilities.json).
+- [Supported clear-pass screenshot](../evidence/phase-01/supported-clear-screen.png) and [unsupported-state screenshot](../evidence/phase-01/unsupported-webgpu.png).
+- Local quality gate: 20/20 unit tests plus formatting, lint, strict types, and production build.
+- Browser gate: 3/3 supported/failure/recovery flows.
+- Remote CI run link/badge remains pending because no push is authorized.
+
+## Qualification record
+
+All implementation checklist items and locally executable exit criteria passed on 2026-08-30. Installed Chrome selected a hardware WebGPU adapter reporting vendor `nvidia`, architecture `turing`, and `timestamp-query`; the application rendered a 1920×1080 clear pass with no uncaptured GPU or console error. Capability limits and derived capacity are retained in the evidence directory.
+
+The committed GitHub Actions workflow runs clean install, the aggregate quality gate, a production build, and browser smoke tests. Its remote-green exit criterion cannot be observed until the local commits are pushed. The project policy explicitly forbids this agent from pushing, so Phase 02 work may be prepared locally, but the public Phase 01 exit gate remains externally pending.
 
 ## Risks and mitigations
 

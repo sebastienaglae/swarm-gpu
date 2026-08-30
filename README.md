@@ -74,6 +74,19 @@ docs/
   architecture/      diagrams and accepted decision records
 ```
 
+## Development
+
+Prerequisites: Node.js 22.20 (pinned in `.nvmrc`) and npm 11.18. From a clean clone:
+
+```bash
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:4173`. WebGPU requires a secure context; localhost qualifies. Run the complete local quality gate with `npm run check` and the browser smoke suite with `npm run test:e2e`. The browser suite installs with `npx playwright install chromium` when Chromium is not already present.
+
+The current Phase 01 application intentionally renders only a validated clear screen. Meshes and static instancing begin in Phase 02.
+
 ## Definition of a trustworthy performance claim
 
 The headline target is not “one million objects” in isolation. A valid result reports a fixed scenario, warm-up period, sample duration, median and percentile frame times, CPU and GPU timing when supported, resolution, visible population, draw count, and whether the browser used native WebGPU. Results without that context are exploratory and must not be placed in the README headline.
