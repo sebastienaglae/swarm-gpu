@@ -10,7 +10,7 @@ import { OrbitCamera } from '../../src/renderer/OrbitCamera';
 describe('global uniform layout', () => {
   it('uses an aligned persistent block with stable field offsets', () => {
     expect(GLOBAL_UNIFORM_BYTES).toBe(448);
-    expect(GLOBAL_UNIFORM_USED_BYTES).toBe(400);
+    expect(GLOBAL_UNIFORM_USED_BYTES).toBe(416);
     const camera = new OrbitCamera();
     camera.update();
     const target = new Float32Array(GLOBAL_UNIFORM_FLOATS);

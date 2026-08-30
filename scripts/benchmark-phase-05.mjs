@@ -6,12 +6,13 @@ import { URL } from 'node:url';
 const baseUrl = process.argv[2] ?? 'http://127.0.0.1:5174/';
 const commit = process.argv[3];
 if (!commit || !/^[0-9a-f]{7,40}$/.test(commit)) throw new Error('Pass a clean source commit');
+const populationFilter = Number(process.argv[4] ?? 0);
 const scenarios = [
   { population: 500_000, mode: 'auto', lodMode: '-1' },
   { population: 500_000, mode: 'near-only', lodMode: '0' },
   { population: 1_000_000, mode: 'auto', lodMode: '-1' },
   { population: 1_000_000, mode: 'near-only', lodMode: '0' },
-];
+].filter((scenario) => populationFilter === 0 || scenario.population === populationFilter);
 const width = 1280;
 const height = 720;
 const warmupSeconds = 5;

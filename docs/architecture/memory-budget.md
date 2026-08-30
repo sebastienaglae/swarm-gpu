@@ -64,3 +64,11 @@ counter/capacity block, and one 20-byte indexed indirect record. Realized variab
 therefore 84 bytes per instance rather than the 92-byte three-LOD planning bound. At one million
 capacity the renderer allocates 84,000,036 bytes (80.1 MiB) of tracked state. Phase 05 may move to
 the planned three-list layout and must update both this figure and runtime diagnostics.
+
+## Phase 05 realized allocation
+
+The planned three-list layout is now realized: 12 visible-ID bytes per capacity instance, three
+16-byte counter records, and three 20-byte indirect records. Total tracked state is therefore
+`capacity × 92 + 108` bytes, or 92,000,108 bytes (87.74 MiB) at one million capacity. The three
+lists deliberately reserve full capacity independently to make every classification distribution
+overflow-safe without CPU intervention.

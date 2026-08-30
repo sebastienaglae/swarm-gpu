@@ -280,8 +280,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     .toBe(1);
   await page.locator('#capture-button').click();
   await expect(page.locator('#population-select')).toBeHidden();
-  await expect(page.locator('#capture-button')).toHaveText('Exit capture');
-  await page.locator('#capture-button').click();
+  await page.keyboard.press('Escape');
   await expect(page.locator('#population-select')).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_LAST_TEXTURE_SIZE__')))

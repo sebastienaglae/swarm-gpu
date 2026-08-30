@@ -23,35 +23,35 @@ Exact thresholds are scene parameters chosen through projected screen size, not 
 
 ### GPU classification and buffers
 
-- [ ] Extend culling to compute projected size/depth and select one of three outputs.
-- [ ] Maintain independent capacity-safe counters and indirect records.
-- [ ] Choose visible-list organization (three buffers or fixed regions) based on clear memory arithmetic.
-- [ ] Finalize three indirect records on GPU.
-- [ ] Issue at most three swarm indirect draws, skipping is not CPU-dependent because zero instance counts are valid.
-- [ ] Verify base offsets, first-instance semantics, and per-LOD mesh index ranges.
+- [x] Extend culling to compute projected size/depth and select one of three outputs.
+- [x] Maintain independent capacity-safe counters and indirect records.
+- [x] Choose visible-list organization (three buffers or fixed regions) based on clear memory arithmetic.
+- [x] Finalize three indirect records on GPU.
+- [x] Issue at most three swarm indirect draws, skipping is not CPU-dependent because zero instance counts are valid.
+- [x] Verify base offsets, first-instance semantics, and per-LOD mesh index ranges.
 
 ### Geometry and shading
 
-- [ ] Produce three compatible representations with documented vertex/index counts and bounds.
-- [ ] Derive orientation from velocity robustly, with a fallback heading near zero speed.
-- [ ] Use a restrained emissive palette and inexpensive directional/rim lighting.
-- [ ] Implement far billboard facing without storing per-instance matrices.
-- [ ] Keep transparency strategy explicit; prefer additive or alpha behavior that avoids global per-instance sorting.
-- [ ] Prevent NaNs and degenerate basis construction in orientation and billboard math.
+- [x] Produce three compatible representations with documented vertex/index counts and bounds.
+- [x] Derive orientation from velocity robustly, with a fallback heading near zero speed.
+- [x] Use a restrained emissive palette and inexpensive directional/rim lighting.
+- [x] Implement far billboard facing without storing per-instance matrices.
+- [x] Keep transparency strategy explicit; prefer additive or alpha behavior that avoids global per-instance sorting.
+- [x] Prevent NaNs and degenerate basis construction in orientation and billboard math.
 
 ### Visual direction
 
-- [ ] Establish space background, fog/depth fade, attractor marker, and color variation as independently toggleable passes/features.
-- [ ] Make movement legible at both 10k and 1m density.
-- [ ] Provide a clean capture mode that hides controls but can retain metrics.
-- [ ] Avoid post-processing until base frame budget is measured; any bloom is optional, toggleable, and separately benchmarked.
-- [ ] Confirm colors and overlay contrast remain readable for common color-vision deficiencies.
+- [x] Establish space background, fog/depth fade, attractor marker, and color variation as independently toggleable passes/features.
+- [x] Make movement legible at both 10k and 1m density.
+- [x] Provide a clean capture mode that hides controls but can retain metrics.
+- [x] Avoid post-processing until base frame budget is measured; any bloom is optional, toggleable, and separately benchmarked.
+- [x] Confirm colors and overlay contrast remain readable for common color-vision deficiencies.
 
 ### Controls
 
-- [ ] Expose LOD auto/fixed debug modes, thresholds, visualization-by-LOD, and mesh wireframe/debug view in development UI.
-- [ ] Keep public controls focused: population, attract/repel, pause, reset, benchmark, quality/render scale.
-- [ ] Validate controls do not recreate pipelines or buffers during normal changes.
+- [x] Expose LOD auto/fixed debug modes, thresholds, visualization-by-LOD, and mesh wireframe/debug view in development UI.
+- [x] Keep public controls focused: population, attract/repel, pause, reset, benchmark, quality/render scale.
+- [x] Validate controls do not recreate pipelines or buffers during normal changes.
 
 ## Validation plan
 

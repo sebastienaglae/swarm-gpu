@@ -56,3 +56,16 @@ The retained Phase 02 evidence records source inspection and benchmark behavior 
   action. Benchmark timestamp mapping occurs after the 20-second interactive measurement window.
 - The deterministic visibility control mutates existing uniform fields and is enabled only by the
   benchmark query parameter; it does not allocate inside the loop.
+
+## Phase 05 LOD audit
+
+- Three render pipelines, combined mesh buffers, three list regions, counter records, and indirect
+  records are all created during initialization. Per-frame LOD and visual controls update fields in
+  the existing uniform staging array only.
+- Fixed/auto LOD, thresholds, debug colors, fog, background, marker, and render scale do not rebuild
+  GPU pipelines or bind groups. Render-scale changes only resize the depth/canvas attachments as an
+  explicit user action.
+- The three indirect draw calls are statically encoded. Empty LODs are skipped by a GPU-written zero
+  instance count rather than CPU-visible counters.
+- Camera-sweep, ID capture, and benchmark counters remain paused development readbacks outside the
+  interactive loop.

@@ -263,6 +263,10 @@ export class App {
     location.assign(url);
   };
 
+  readonly #onKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && this.#captureMode) this.#onCaptureMode();
+  };
+
   readonly #onWindowResize = (): void => {
     this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
   };
@@ -630,6 +634,57 @@ export class App {
     };
   }
 
+  public async sweepLodCameraForDevelopment(steps = 12): Promise<{
+    readonly steps: number;
+    readonly duplicateIds: number;
+    readonly invalidIds: number;
+    readonly overflows: number;
+    readonly countHistory: readonly (readonly number[])[];
+  }> {
+    const renderer = this.#renderer;
+    const gpu = this.#gpu;
+    if (
+      !import.meta.env.DEV ||
+      this.state.current !== 'paused' ||
+      renderer === undefined ||
+      gpu === undefined ||
+      !this.#canvasSize.drawable
+    ) {
+      throw new Error('LOD camera sweep requires paused development rendering');
+    }
+    const safeSteps = Math.min(32, Math.max(1, Math.floor(steps)));
+    const fixtureCount = 64;
+    let duplicateIds = 0;
+    let invalidIds = 0;
+    let overflows = 0;
+    const countHistory: number[][] = [];
+    renderer.resetSimulation();
+    this.#simulationFrame.deltaSeconds = 0;
+    this.#simulationFrame.lodMode = -1;
+    for (let step = 0; step < safeSteps; step += 1) {
+      this.#camera.applyInput(3, 0.4, step % 2 === 0 ? 0.35 : -0.35);
+      this.#camera.update();
+      renderer.render(
+        gpu.canvasContext,
+        this.#camera,
+        this.#simulationFrame,
+        this.#canvasSize.width,
+        this.#canvasSize.height,
+        fixtureCount,
+        window.devicePixelRatio * this.#renderScale,
+      );
+      const capture = await renderer.captureVisibility(fixtureCount);
+      const ids = Array.from(capture.visibleIds);
+      duplicateIds += ids.length - new Set(ids).size;
+      invalidIds += ids.filter((id) => id >= fixtureCount).length;
+      overflows += capture.overflowCount;
+      countHistory.push(Array.from(capture.lodCounts));
+    }
+    this.#camera.reset();
+    this.#camera.update();
+    return { steps: safeSteps, duplicateIds, invalidIds, overflows, countHistory };
+  }
+
   public async measureGpuFrameForDevelopment(): Promise<{
     readonly simulationMs: number;
     readonly cullingMs: number;
@@ -730,6 +785,7 @@ export class App {
     this.#captureButton.addEventListener('click', this.#onCaptureMode);
     this.#benchmarkButton.addEventListener('click', this.#onBenchmarkMode);
     window.addEventListener('resize', this.#onWindowResize);
+    window.addEventListener('keydown', this.#onKeyDown);
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
@@ -757,6 +813,7 @@ export class App {
     this.#captureButton.removeEventListener('click', this.#onCaptureMode);
     this.#benchmarkButton.removeEventListener('click', this.#onBenchmarkMode);
     window.removeEventListener('resize', this.#onWindowResize);
+    window.removeEventListener('keydown', this.#onKeyDown);
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
@@ -798,6 +855,7 @@ export class App {
       return;
     console.error(`[SwarmGPU] Device lost (${info.reason})`, info.message);
     this.#cancelFrame();
+    this.#controls.hidden = true;
     this.state.transition('recovering');
     this.#showStatus(
       'GPU device lost',

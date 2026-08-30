@@ -35,8 +35,14 @@ for (let lod = 0; lod < 3; lod += 1) {
 if (captures.some((capture) => !capture.idsMatch || !capture.indirectMatch)) {
   throw new Error(`LOD validation mismatch: ${JSON.stringify(captures)}`);
 }
+const sweep = await page.evaluate(() =>
+  Reflect.get(globalThis, '__SWARM_GPU_APP__').sweepLodCameraForDevelopment(12),
+);
+if (sweep.duplicateIds !== 0 || sweep.invalidIds !== 0 || sweep.overflows !== 0) {
+  throw new Error(`LOD camera sweep failed: ${JSON.stringify(sweep)}`);
+}
 if (errors.length > 0) throw new Error(errors.join('\n'));
 process.stdout.write(
-  `${JSON.stringify({ fixed: captures.slice(0, 3), auto: captures[3] }, null, 2)}\n`,
+  `${JSON.stringify({ fixed: captures.slice(0, 3), auto: captures[3], sweep }, null, 2)}\n`,
 );
 await browser.close();

@@ -35,7 +35,7 @@ import {
 import type { OrbitCamera } from './OrbitCamera';
 
 export const STATIC_RENDERER_MAX_INSTANCES = 1_000_000;
-export const STATIC_POPULATION_PRESETS = [100_000, 250_000, 500_000, 1_000_000] as const;
+export const STATIC_POPULATION_PRESETS = [10_000, 100_000, 250_000, 500_000, 1_000_000] as const;
 export const BUFFER_UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024;
 export const SWARM_DRAW_CALLS = 3;
 export const AUXILIARY_DRAW_CALLS = 1;
