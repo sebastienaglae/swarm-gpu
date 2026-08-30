@@ -2,7 +2,7 @@ import { LOD_COUNT, LOD_COUNTER_BYTES } from '../lod/LodModel';
 import { FrameSampleRecorder } from './FrameSampleRecorder';
 
 const SLOT_COUNT = 3;
-const SAMPLE_INTERVAL_FRAMES = 15;
+const SAMPLE_INTERVAL_FRAMES = 60;
 
 export interface GpuPassTiming {
   readonly simulationMs: number;
