@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienaglae/swarm-gpu/blob/main/benchmarks/schemas/simulation-benchmark-result.schema.json",
+  "title": "SwarmGPU simulation benchmark result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scenario",
+    "source",
+    "environment",
+    "adapter",
+    "measurement",
+    "results"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "seed",
+        "instanceCount",
+        "canvasWidth",
+        "canvasHeight",
+        "fixedTimestepSeconds",
+        "workgroupSize"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9-]*$" },
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "instanceCount": { "type": "integer", "minimum": 1 },
+        "canvasWidth": { "type": "integer", "minimum": 1 },
+        "canvasHeight": { "type": "integer", "minimum": 1 },
+        "fixedTimestepSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "workgroupSize": { "enum": [128, 256] }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty"],
+      "properties": {
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "dirty": { "type": "boolean", "const": false }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordedAt", "os", "browser", "powerPreference"],
+      "properties": {
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "os": { "type": "string", "minLength": 1 },
+        "browser": { "type": "string", "minLength": 1 },
+        "powerPreference": { "enum": ["high-performance", "low-power", "default"] }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "driver", "timestampQuery"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "driver": { "type": "string", "minLength": 1 },
+        "timestampQuery": { "type": "boolean", "const": true }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "warmupSeconds",
+        "sampleSeconds",
+        "frameSampleCount",
+        "gpuSampleCount",
+        "longFrameThresholdMs"
+      ],
+      "properties": {
+        "warmupSeconds": { "type": "number", "minimum": 5 },
+        "sampleSeconds": { "type": "number", "minimum": 20 },
+        "frameSampleCount": { "type": "integer", "minimum": 1 },
+        "gpuSampleCount": { "type": "integer", "minimum": 5 },
+        "longFrameThresholdMs": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frameIntervalMs",
+        "cpuFrameMs",
+        "gpuComputeMs",
+        "gpuRenderMs",
+        "gpuTotalMs",
+        "longFrameCount",
+        "drawCalls",
+        "computeDispatches",
+        "readbacksPerInteractiveFrame",
+        "estimatedExplicitGpuBytes"
+      ],
+      "properties": {
+        "frameIntervalMs": { "$ref": "#/$defs/percentiles" },
+        "cpuFrameMs": { "$ref": "#/$defs/percentiles" },
+        "gpuComputeMs": { "$ref": "#/$defs/percentiles" },
+        "gpuRenderMs": { "$ref": "#/$defs/percentiles" },
+        "gpuTotalMs": { "$ref": "#/$defs/percentiles" },
+        "longFrameCount": { "type": "integer", "minimum": 0 },
+        "drawCalls": { "const": 2 },
+        "computeDispatches": { "const": 1 },
+        "readbacksPerInteractiveFrame": { "const": 0 },
+        "estimatedExplicitGpuBytes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "percentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["median", "p95", "p99"],
+      "properties": {
+        "median": { "type": "number", "minimum": 0 },
+        "p95": { "type": "number", "minimum": 0 },
+        "p99": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}
