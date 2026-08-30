@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swarmgpu.dev/schemas/phase-07-stress-result.schema.json",
+  "title": "SwarmGPU Phase 07 stress result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scenario",
+    "source",
+    "environment",
+    "status",
+    "progress",
+    "validationEvents",
+    "timingDrift",
+    "resources"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "scenario": { "type": "object" },
+    "source": { "type": "object" },
+    "environment": { "type": "object" },
+    "status": { "enum": ["passed", "failed", "unsupported", "timeout"] },
+    "progress": { "type": "object" },
+    "validationEvents": { "type": "array" },
+    "timingDrift": { "type": "object" },
+    "resources": { "type": "object" },
+    "error": { "type": ["string", "null"] },
+    "screenshot": { "type": ["string", "null"] }
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "QUICK-SOAK-10K",
+    "kind": "soak",
+    "population": 10000,
+    "durationSeconds": 10,
+    "repetitions": 0,
+    "timeoutSeconds": 30
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "QUICK-RESIZE",
+    "kind": "resize",
+    "population": 10000,
+    "durationSeconds": 0,
+    "repetitions": 25,
+    "timeoutSeconds": 30
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "QUICK-LIFECYCLE",
+    "kind": "pause-resume",
+    "population": 10000,
+    "durationSeconds": 0,
+    "repetitions": 25,
+    "timeoutSeconds": 30
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "QUICK-REBUILD",
+    "kind": "rebuild",
+    "population": 10000,
+    "durationSeconds": 0,
+    "repetitions": 3,
+    "timeoutSeconds": 90
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "QUICK-CAPACITY",
+    "kind": "capacity",
+    "population": 10000,
+    "durationSeconds": 0,
+    "repetitions": 3,
+    "timeoutSeconds": 30
+  }
+]

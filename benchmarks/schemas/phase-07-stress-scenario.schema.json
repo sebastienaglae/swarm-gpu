@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swarmgpu.dev/schemas/phase-07-stress-scenario.schema.json",
+  "title": "SwarmGPU Phase 07 stress scenarios",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "scenarioVersion",
+      "id",
+      "kind",
+      "population",
+      "durationSeconds",
+      "repetitions",
+      "timeoutSeconds"
+    ],
+    "properties": {
+      "scenarioVersion": { "const": "1.0.0" },
+      "id": { "type": "string", "minLength": 1 },
+      "kind": {
+        "enum": [
+          "soak",
+          "resize",
+          "pause-resume",
+          "quality",
+          "rebuild",
+          "visibility",
+          "recovery",
+          "capacity"
+        ]
+      },
+      "population": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+      "durationSeconds": { "type": "number", "minimum": 0 },
+      "repetitions": { "type": "integer", "minimum": 0 },
+      "timeoutSeconds": { "type": "integer", "minimum": 1 },
+      "screenshot": { "type": "boolean" }
+    }
+  }
+}

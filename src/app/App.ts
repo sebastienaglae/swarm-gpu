@@ -15,6 +15,7 @@ import { LOD_MESH_RANGES } from '../renderer/LodMeshes';
 import { createStaticInstanceData } from '../renderer/InstanceData';
 import {
   STATIC_POPULATION_PRESETS,
+  STATIC_RENDERER_MAX_INSTANCES,
   estimateSimulationStateBytes,
   type SimulationFrame,
   StaticSwarmRenderer,
@@ -638,6 +639,37 @@ export class App {
     this.#diagnostics.setRenderer(renderer, this.#instanceCount);
     this.reset();
     if (wasRunning) this.resume();
+  }
+
+  public validateCapacityForDevelopment(count: number): {
+    readonly accepted: boolean;
+    readonly maximum: number;
+    readonly reason: string;
+  } {
+    if (!import.meta.env.DEV) throw new Error('Capacity validation is development-only');
+    const maximum = Math.min(
+      STATIC_RENDERER_MAX_INSTANCES,
+      this.#gpu?.capabilities.capacity.maxInstances ?? 0,
+    );
+    const accepted = Number.isSafeInteger(count) && count >= 1 && count <= maximum;
+    return {
+      accepted,
+      maximum,
+      reason: accepted
+        ? 'accepted'
+        : `Instance count must be a safe integer between 1 and ${String(maximum)}`,
+    };
+  }
+
+  public setVisibilityForDevelopment(hidden: boolean): void {
+    if (!import.meta.env.DEV) throw new Error('Visibility injection is development-only');
+    if (hidden && this.state.current === 'running') {
+      this.#visibilityPaused = true;
+      this.pause();
+    } else if (!hidden && this.#visibilityPaused && this.state.current === 'paused') {
+      this.#visibilityPaused = false;
+      this.resume();
+    }
   }
 
   public async captureSimulationStateForDevelopment(instanceCount = 8): Promise<{

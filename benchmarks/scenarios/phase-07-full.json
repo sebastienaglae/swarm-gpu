@@ -1,0 +1,102 @@
+[
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "SOAK-10K",
+    "kind": "soak",
+    "population": 10000,
+    "durationSeconds": 600,
+    "repetitions": 0,
+    "timeoutSeconds": 660
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "SOAK-100K",
+    "kind": "soak",
+    "population": 100000,
+    "durationSeconds": 600,
+    "repetitions": 0,
+    "timeoutSeconds": 660
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "SOAK-500K",
+    "kind": "soak",
+    "population": 500000,
+    "durationSeconds": 600,
+    "repetitions": 0,
+    "timeoutSeconds": 660
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "SOAK-1M",
+    "kind": "soak",
+    "population": 1000000,
+    "durationSeconds": 120,
+    "repetitions": 0,
+    "timeoutSeconds": 180
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "RESIZE-1000",
+    "kind": "resize",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 1000,
+    "timeoutSeconds": 180
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "PAUSE-RESUME-500",
+    "kind": "pause-resume",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 500,
+    "timeoutSeconds": 120
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "QUALITY-500",
+    "kind": "quality",
+    "population": 500000,
+    "durationSeconds": 0,
+    "repetitions": 500,
+    "timeoutSeconds": 120
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "REBUILD-100",
+    "kind": "rebuild",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 100,
+    "timeoutSeconds": 1800
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "VISIBILITY-100",
+    "kind": "visibility",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 100,
+    "timeoutSeconds": 120
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "RECOVERY-25",
+    "kind": "recovery",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 25,
+    "timeoutSeconds": 900,
+    "screenshot": true
+  },
+  {
+    "scenarioVersion": "1.0.0",
+    "id": "CAPACITY-BOUNDARIES",
+    "kind": "capacity",
+    "population": 10000,
+    "durationSeconds": 0,
+    "repetitions": 3,
+    "timeoutSeconds": 30
+  }
+]
