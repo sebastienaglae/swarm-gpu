@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05070d" />
+    <meta name="description" content="SwarmGPU — a raw WebGPU renderer for GPU-driven swarms." />
+    <title>SwarmGPU</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="gpu-canvas" aria-label="SwarmGPU rendering canvas"></canvas>
+      <section id="status-panel" class="status-panel" aria-live="polite">
+        <p class="eyebrow">SWARMGPU / FOUNDATION</p>
+        <h1 id="status-title">Initializing WebGPU</h1>
+        <p id="status-message">Checking browser and adapter capabilities…</p>
+        <button id="retry-button" type="button" hidden>Retry initialization</button>
+      </section>
+      <aside id="diagnostics" class="diagnostics" aria-label="Renderer diagnostics" hidden>
+        <div><span>State</span><output id="metric-state">idle</output></div>
+        <div><span>Adapter</span><output id="metric-adapter">—</output></div>
+        <div><span>Canvas</span><output id="metric-canvas">0 × 0</output></div>
+        <div><span>Max instances</span><output id="metric-capacity">—</output></div>
+        <div><span>Timestamp query</span><output id="metric-timestamp">—</output></div>
+      </aside>
+      <nav id="controls" class="controls" aria-label="Renderer lifecycle" hidden>
+        <button id="pause-button" type="button">Pause</button>
+        <button id="reset-button" type="button">Reset</button>
+      </nav>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
