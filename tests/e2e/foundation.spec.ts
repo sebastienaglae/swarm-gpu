@@ -74,10 +74,25 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         removeEventListener: noop,
         pushErrorScope: noop,
         popErrorScope: async () => null,
-        createBuffer: (descriptor: { label?: string }) => ({
-          label: descriptor.label,
-          destroy: noop,
-        }),
+        createBuffer: (descriptor: { label?: string; size: number }) => {
+          const storage = new ArrayBuffer(descriptor.size);
+          let mapped = false;
+          return {
+            label: descriptor.label,
+            get mapState() {
+              return mapped ? 'mapped' : 'unmapped';
+            },
+            mapAsync: async () => {
+              mapped = true;
+            },
+            getMappedRange: () => storage,
+            unmap: () => {
+              mapped = false;
+            },
+            destroy: noop,
+          };
+        },
+        createQuerySet: () => ({ destroy: noop }),
         createTexture: (descriptor: { size: [number, number, number] }) => {
           lastTextureSize = `${String(descriptor.size[0])}x${String(descriptor.size[1])}`;
           return {
@@ -97,6 +112,8 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         createComputePipelineAsync: async () => ({}),
         createCommandEncoder: () => ({
           clearBuffer: noop,
+          resolveQuerySet: noop,
+          copyBufferToBuffer: noop,
           beginComputePass: () => ({
             setBindGroup: noop,
             setPipeline: noop,
@@ -177,11 +194,16 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         UNIFORM: 64,
         STORAGE: 128,
         INDIRECT: 256,
+        QUERY_RESOLVE: 512,
       },
     });
     Object.defineProperty(globalThis, 'GPUShaderStage', {
       configurable: true,
       value: { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 },
+    });
+    Object.defineProperty(globalThis, 'GPUMapMode', {
+      configurable: true,
+      value: { READ: 1 },
     });
     Object.defineProperty(Navigator.prototype, 'gpu', {
       configurable: true,

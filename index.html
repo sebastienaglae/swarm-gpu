@@ -28,14 +28,19 @@
         <div><span>Timestamp query</span><output id="metric-timestamp">—</output></div>
         <div><span>Instances</span><output id="metric-instances">—</output></div>
         <div><span>Visible</span><output id="metric-visible">GPU-resident</output></div>
+        <div><span>LOD near/mid/far</span><output id="metric-lod">delayed</output></div>
         <div><span>Triangles (max)</span><output id="metric-triangles">—</output></div>
         <div><span>Draw calls (max)</span><output id="metric-draws">—</output></div>
         <div><span>Compute dispatches</span><output id="metric-dispatches">—</output></div>
         <div><span>State memory</span><output id="metric-memory">—</output></div>
         <div><span>FPS</span><output id="metric-fps">—</output></div>
         <div><span>Frame interval</span><output id="metric-frame">—</output></div>
-        <div><span>CPU encode + submit</span><output id="metric-cpu">—</output></div>
-        <div><span>GPU frame</span><output id="metric-gpu">not measured</output></div>
+        <div><span>CPU update</span><output id="metric-cpu-update">—</output></div>
+        <div><span>CPU encode</span><output id="metric-cpu">—</output></div>
+        <div><span>Submit call</span><output id="metric-submit">—</output></div>
+        <div><span>GPU sim/cull/render</span><output id="metric-gpu-passes">—</output></div>
+        <div><span>GPU frame</span><output id="metric-gpu">delayed</output></div>
+        <div><span>Render scale</span><output id="metric-render-scale">100%</output></div>
       </aside>
       <nav id="controls" class="controls" aria-label="Renderer lifecycle" hidden>
         <label>
@@ -68,8 +73,11 @@
           Render scale
           <select id="render-scale">
             <option value="0.5">50%</option>
+            <option value="0.625">62.5%</option>
             <option value="0.75">75%</option>
+            <option value="0.875">87.5%</option>
             <option value="1" selected>100%</option>
+            <option value="auto">Auto</option>
           </select>
         </label>
         <details id="lod-controls" class="lod-controls">
@@ -99,6 +107,7 @@
         </details>
         <button id="capture-button" type="button">Capture mode</button>
         <button id="benchmark-button" type="button">Benchmark mode</button>
+        <button id="export-button" type="button">Export metrics</button>
         <button id="pause-button" type="button">Pause</button>
         <button id="reset-button" type="button">Reset</button>
       </nav>

@@ -1,4 +1,5 @@
 import { DiagnosticsOverlay } from '../diagnostics/DiagnosticsOverlay';
+import { DynamicResolutionController } from '../diagnostics/DynamicResolutionController';
 import { compactVisibleSpheres } from '../culling/CullingModel';
 import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
 import type { CanvasSize } from '../gpu/canvasSize';
@@ -59,6 +60,7 @@ export class App {
   readonly #markerInput: HTMLInputElement;
   readonly #captureButton: HTMLButtonElement;
   readonly #benchmarkButton: HTMLButtonElement;
+  readonly #exportButton: HTMLButtonElement;
   readonly #lodControls: HTMLDetailsElement;
   readonly #input = new InputState();
   readonly #cameraInput = new Float32Array(3);
@@ -109,6 +111,7 @@ export class App {
     backgroundEnabled: 1,
   };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
+  readonly #dynamicResolution = new DynamicResolutionController();
   readonly #resizeObserver: ResizeObserver;
   #gpu: GpuContext | undefined;
   #renderer: StaticSwarmRenderer | undefined;
@@ -123,7 +126,9 @@ export class App {
   #lastFrameTimestamp = 0;
   #smoothedFrameInterval = 16.67;
   #renderScale = 1;
+  #adaptiveResolution = new URLSearchParams(location.search).get('adaptive') === '1';
   #captureMode = false;
+  #lastCpuUpdateMs = 0;
   #lastDiagnosticsTimestamp = 0;
   readonly #fixedTimestep = new URLSearchParams(location.search).get('benchmark') === '1';
   readonly #requestedWorkgroupSize =
@@ -140,6 +145,7 @@ export class App {
     const gpu = this.#gpu;
     const renderer = this.#renderer;
     if (gpu !== undefined && renderer !== undefined && this.#canvasSize.drawable) {
+      const updateStart = performance.now();
       this.#input.consumeOrbitDelta(this.#cameraInput);
       const [orbitX = 0, orbitY = 0, zoom = 0] = this.#cameraInput;
       this.#camera.applyInput(orbitX, orbitY, zoom);
@@ -170,6 +176,7 @@ export class App {
         hasAttractor,
       );
       this.#simulationFrame.attractorRadius = Number(this.#interactionRadius.value);
+      this.#lastCpuUpdateMs = performance.now() - updateStart;
       renderer.render(
         gpu.canvasContext,
         this.#camera,
@@ -177,13 +184,20 @@ export class App {
         this.#canvasSize.width,
         this.#canvasSize.height,
         this.#instanceCount,
-        window.devicePixelRatio,
+        window.devicePixelRatio * this.#renderScale,
       );
 
       if (this.#lastFrameTimestamp > 0) {
         const interval = timestamp - this.#lastFrameTimestamp;
         this.#frameIntervalSamples.record(interval);
         this.#smoothedFrameInterval += (interval - this.#smoothedFrameInterval) * 0.08;
+        if (this.#adaptiveResolution) {
+          const nextScale = this.#dynamicResolution.record(renderer.latestGpuFrameMs, interval);
+          if (nextScale !== undefined && nextScale !== this.#renderScale) {
+            this.#renderScale = nextScale;
+            this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
+          }
+        }
       }
       this.#lastFrameTimestamp = timestamp;
       if (timestamp - this.#lastDiagnosticsTimestamp >= 250) {
@@ -192,6 +206,10 @@ export class App {
           1000 / this.#smoothedFrameInterval,
           this.#smoothedFrameInterval,
           renderer.lastCpuFrameMs,
+          this.#lastCpuUpdateMs,
+          renderer.lastSubmitMs,
+          renderer.captureGpuTelemetry(this.#simulationFrame.frameIndex),
+          this.#renderScale,
         );
       }
     }
@@ -223,8 +241,14 @@ export class App {
   };
 
   readonly #onRenderScaleChange = (): void => {
+    if (this.#renderScaleSelect.value === 'auto') {
+      this.#adaptiveResolution = true;
+      this.#dynamicResolution.setScale(this.#renderScale);
+      return;
+    }
     const scale = Number(this.#renderScaleSelect.value);
-    if (![0.5, 0.75, 1].includes(scale)) return;
+    if (![0.5, 0.625, 0.75, 0.875, 1].includes(scale)) return;
+    this.#adaptiveResolution = false;
     this.#renderScale = scale;
     this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
   };
@@ -263,6 +287,17 @@ export class App {
     location.assign(url);
   };
 
+  readonly #onExportMetrics = (): void => {
+    const report = this.captureDiagnosticsReport();
+    const blob = new Blob([`${JSON.stringify(report, null, 2)}\n`], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `swarmgpu-diagnostics-${new Date().toISOString().replaceAll(':', '-')}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   readonly #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key === 'Escape' && this.#captureMode) this.#onCaptureMode();
   };
@@ -298,6 +333,7 @@ export class App {
     this.#interactionStrength = requireElement(root, '#interaction-strength', HTMLInputElement);
     this.#interactionRadius = requireElement(root, '#interaction-radius', HTMLInputElement);
     this.#renderScaleSelect = requireElement(root, '#render-scale', HTMLSelectElement);
+    if (this.#adaptiveResolution) this.#renderScaleSelect.value = 'auto';
     this.#lodModeSelect = requireElement(root, '#lod-mode', HTMLSelectElement);
     this.#lodNearInput = requireElement(root, '#lod-near', HTMLInputElement);
     this.#lodMidInput = requireElement(root, '#lod-mid', HTMLInputElement);
@@ -308,6 +344,7 @@ export class App {
     this.#markerInput = requireElement(root, '#marker-toggle', HTMLInputElement);
     this.#captureButton = requireElement(root, '#capture-button', HTMLButtonElement);
     this.#benchmarkButton = requireElement(root, '#benchmark-button', HTMLButtonElement);
+    this.#exportButton = requireElement(root, '#export-button', HTMLButtonElement);
     this.#lodControls = requireElement(root, '#lod-controls', HTMLDetailsElement);
     this.#lodControls.hidden = !import.meta.env.DEV;
     this.#resizeObserver = new ResizeObserver((entries) => {
@@ -458,6 +495,51 @@ export class App {
     return {
       frameIntervalMs: this.#frameIntervalSamples.snapshot(),
       cpuFrameMs: this.#renderer?.captureCpuFrameSamples() ?? [],
+    };
+  }
+
+  public captureDiagnosticsReport(): object {
+    const renderer = this.#renderer;
+    const capabilities = this.#gpu?.capabilities;
+    return {
+      schemaVersion: '1.0.0',
+      capturedAt: new Date().toISOString(),
+      warning:
+        'Display cadence, CPU wall time, and explicit allocation bytes are approximate. GPU timestamps are delayed and unavailable on unsupported adapters.',
+      state: this.state.current,
+      scenario: {
+        population: this.#instanceCount,
+        internalResolution: [this.#canvasSize.width, this.#canvasSize.height],
+        displayResolution: [this.#canvas.clientWidth, this.#canvas.clientHeight],
+        renderScale: this.#renderScale,
+        fixedTimestep: this.#fixedTimestep,
+        lodThresholdsPixels: [
+          this.#simulationFrame.lodNearPixels,
+          this.#simulationFrame.lodMidPixels,
+          this.#simulationFrame.lodFarPixels,
+        ],
+      },
+      capabilities:
+        capabilities === undefined
+          ? null
+          : {
+              adapter: capabilities.adapterDescription,
+              timestampQuery: capabilities.timestampQuerySupported,
+              limits: capabilities.limits,
+            },
+      metrics:
+        renderer === undefined
+          ? null
+          : {
+              cpuEncodeAndSubmitMs: renderer.captureCpuFrameSamples(),
+              frameIntervalMs: this.#frameIntervalSamples.snapshot(),
+              gpu: renderer.captureGpuTelemetrySamples() ?? null,
+              latestGpu: renderer.captureGpuTelemetry(this.#simulationFrame.frameIndex) ?? null,
+              submitCallMs: renderer.lastSubmitMs,
+              estimatedStateBytes: renderer.estimatedStateBytes,
+              drawCalls: renderer.drawCalls,
+              computeDispatches: renderer.computeDispatches,
+            },
     };
   }
 
@@ -784,6 +866,7 @@ export class App {
     }
     this.#captureButton.addEventListener('click', this.#onCaptureMode);
     this.#benchmarkButton.addEventListener('click', this.#onBenchmarkMode);
+    this.#exportButton.addEventListener('click', this.#onExportMetrics);
     window.addEventListener('resize', this.#onWindowResize);
     window.addEventListener('keydown', this.#onKeyDown);
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
@@ -812,6 +895,7 @@ export class App {
     }
     this.#captureButton.removeEventListener('click', this.#onCaptureMode);
     this.#benchmarkButton.removeEventListener('click', this.#onBenchmarkMode);
+    this.#exportButton.removeEventListener('click', this.#onExportMetrics);
     window.removeEventListener('resize', this.#onWindowResize);
     window.removeEventListener('keydown', this.#onKeyDown);
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
@@ -856,6 +940,7 @@ export class App {
     console.error(`[SwarmGPU] Device lost (${info.reason})`, info.message);
     this.#cancelFrame();
     this.#controls.hidden = true;
+    this.#diagnostics.hide();
     this.state.transition('recovering');
     this.#showStatus(
       'GPU device lost',

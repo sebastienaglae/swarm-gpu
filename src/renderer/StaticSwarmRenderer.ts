@@ -1,4 +1,9 @@
 import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
+import {
+  GpuTelemetryRing,
+  type GpuTelemetrySamples,
+  type GpuTelemetrySnapshot,
+} from '../diagnostics/GpuTelemetryRing';
 import { VISIBLE_ID_BYTES } from '../culling/CullingModel';
 import {
   LOD_COUNT,
@@ -100,12 +105,15 @@ export class StaticSwarmRenderer {
   public readonly workgroupSize: number;
   public readonly estimatedStateBytes: number;
   public readonly indirectRendering: boolean;
+  public readonly gpuTelemetryAvailable: boolean;
   public lastCpuFrameMs = 0;
+  public lastSubmitMs = 0;
 
   readonly #device: GPUDevice;
   readonly #resources = new ResourceRegistry();
   readonly #uniformStaging = new Float32Array(GLOBAL_UNIFORM_FLOATS);
   readonly #cpuFrameSamples = new FrameSampleRecorder();
+  readonly #telemetry: GpuTelemetryRing | undefined;
   readonly #uniformBuffer: GPUBuffer;
   readonly #vertexBuffer: GPUBuffer;
   readonly #indexBuffer: GPUBuffer;
@@ -144,6 +152,9 @@ export class StaticSwarmRenderer {
   };
   readonly #computePassDescriptor: GPUComputePassDescriptor = {
     label: 'GPU swarm simulation pass',
+  };
+  readonly #cullingPassDescriptor: GPUComputePassDescriptor = {
+    label: 'GPU swarm culling and indirect finalization pass',
   };
   readonly #submission = [undefined as unknown as GPUCommandBuffer];
   readonly #canvasViewDescriptor: GPUTextureViewDescriptor = {
@@ -218,6 +229,10 @@ export class StaticSwarmRenderer {
     this.workgroupSize = workgroupSize;
     this.indirectRendering = indirectRendering;
     this.computeDispatches = indirectRendering ? COMPUTE_DISPATCHES : 1;
+    this.#telemetry = device.features.has('timestamp-query')
+      ? new GpuTelemetryRing(device, indirectRendering)
+      : undefined;
+    this.gpuTelemetryAvailable = this.#telemetry !== undefined;
   }
 
   public static async create(
@@ -675,20 +690,26 @@ export class StaticSwarmRenderer {
       encoder.clearBuffer(this.#visibilityCounterBuffer, LOD_COUNTER_STRIDE_BYTES * 2, 8);
       encoder.clearBuffer(this.#indirectBuffer);
     }
+    const telemetrySlot = this.#telemetry?.acquire(frame.frameIndex);
+    setTimestampWrites(this.#computePassDescriptor, telemetrySlot?.simulationWrites);
     const computePass = encoder.beginComputePass(this.#computePassDescriptor);
     computePass.setPipeline(this.#simulationPipeline);
     computePass.setBindGroup(0, this.#computeBindGroups[sourceParity]);
     computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
-    if (this.indirectRendering) {
-      computePass.setPipeline(this.#cullingPipeline);
-      computePass.setBindGroup(0, this.#cullBindGroups[destinationParity]);
-      computePass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
-      computePass.setPipeline(this.#finalizePipeline);
-      computePass.setBindGroup(0, this.#finalizeBindGroup);
-      computePass.dispatchWorkgroups(1);
-    }
     computePass.end();
+    if (this.indirectRendering) {
+      setTimestampWrites(this.#cullingPassDescriptor, telemetrySlot?.cullingWrites);
+      const cullingPass = encoder.beginComputePass(this.#cullingPassDescriptor);
+      cullingPass.setPipeline(this.#cullingPipeline);
+      cullingPass.setBindGroup(0, this.#cullBindGroups[destinationParity]);
+      cullingPass.dispatchWorkgroups(Math.ceil(safeInstanceCount / this.workgroupSize));
+      cullingPass.setPipeline(this.#finalizePipeline);
+      cullingPass.setBindGroup(0, this.#finalizeBindGroup);
+      cullingPass.dispatchWorkgroups(1);
+      cullingPass.end();
+    }
 
+    setTimestampWrites(this.#renderPassDescriptor, telemetrySlot?.renderWrites);
     const renderPass = encoder.beginRenderPass(this.#renderPassDescriptor);
     renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
     if ((frame.backgroundEnabled ?? 1) > 0.5) {
@@ -709,8 +730,14 @@ export class StaticSwarmRenderer {
       renderPass.drawIndexed(LOD_MESH_RANGES[0]?.indexCount ?? 0, safeInstanceCount);
     }
     renderPass.end();
+    if (telemetrySlot !== undefined) {
+      this.#telemetry?.resolve(encoder, telemetrySlot, this.#visibilityCounterBuffer);
+    }
     this.#submission[0] = encoder.finish(this.#commandBufferDescriptor);
+    const submitStart = performance.now();
     this.#device.queue.submit(this.#submission);
+    this.lastSubmitMs = performance.now() - submitStart;
+    if (telemetrySlot !== undefined) this.#telemetry?.commit(telemetrySlot);
     this.#stateParity = destinationParity;
     this.lastCpuFrameMs = performance.now() - start;
     this.#cpuFrameSamples.record(this.lastCpuFrameMs);
@@ -1009,11 +1036,24 @@ export class StaticSwarmRenderer {
     return this.#cpuFrameSamples.snapshot();
   }
 
+  public captureGpuTelemetry(frameIndex: number): GpuTelemetrySnapshot | undefined {
+    return this.#telemetry?.snapshot(frameIndex);
+  }
+
+  public captureGpuTelemetrySamples(): GpuTelemetrySamples | undefined {
+    return this.#telemetry?.samples();
+  }
+
+  public get latestGpuFrameMs(): number | undefined {
+    return this.#telemetry?.latestTotalMs;
+  }
+
   public destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
     this.#depthTexture?.destroy();
     this.#depthTexture = undefined;
+    this.#telemetry?.destroy();
     this.#resources.destroyAll();
   }
 }
@@ -1024,6 +1064,14 @@ function uniformLayoutEntry(visibility: GPUShaderStageFlags): GPUBindGroupLayout
     visibility,
     buffer: { type: 'uniform', minBindingSize: GLOBAL_UNIFORM_USED_BYTES },
   };
+}
+
+function setTimestampWrites(
+  descriptor: GPUComputePassDescriptor | GPURenderPassDescriptor,
+  writes: GPUComputePassTimestampWrites | GPURenderPassTimestampWrites | undefined,
+): void {
+  if (writes === undefined) delete descriptor.timestampWrites;
+  else descriptor.timestampWrites = writes;
 }
 
 function storageLayoutEntry(
