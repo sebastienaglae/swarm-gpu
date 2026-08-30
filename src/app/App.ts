@@ -8,7 +8,8 @@ import { toUserFacingError } from '../gpu/GpuError';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import { InputState } from '../input/InputState';
 import { OrbitCamera } from '../renderer/OrbitCamera';
-import { DRONE_BOUNDING_RADIUS, DRONE_INDICES } from '../renderer/DroneMesh';
+import { DRONE_BOUNDING_RADIUS } from '../renderer/DroneMesh';
+import { LOD_MESH_RANGES } from '../renderer/LodMeshes';
 import { createStaticInstanceData } from '../renderer/InstanceData';
 import {
   STATIC_POPULATION_PRESETS,
@@ -62,6 +63,10 @@ export class App {
     frameIndex: number;
     benchmarkVisibilityFraction: number;
     benchmarkVisibilityEnabled: number;
+    lodNearPixels: number;
+    lodMidPixels: number;
+    lodFarPixels: number;
+    lodMode: number;
   } = {
     timeSeconds: 0,
     deltaSeconds: 0,
@@ -78,6 +83,10 @@ export class App {
     frameIndex: 0,
     benchmarkVisibilityFraction: 1,
     benchmarkVisibilityEnabled: 0,
+    lodNearPixels: 8,
+    lodMidPixels: 2,
+    lodFarPixels: 0.35,
+    lodMode: -1,
   };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
   readonly #resizeObserver: ResizeObserver;
@@ -458,6 +467,10 @@ export class App {
     readonly overflowCount: number;
     readonly idsMatch: boolean;
     readonly indirectMatch: boolean;
+    readonly lodCounts: readonly number[];
+    readonly indirectArguments: readonly number[];
+    readonly expectedVisibleCount: number;
+    readonly indirectRecordMatches: readonly boolean[];
   }> {
     const renderer = this.#renderer;
     const gpu = this.#gpu;
@@ -499,20 +512,31 @@ export class App {
     const actualIds = Array.from(visibility.visibleIds).sort((a, b) => a - b);
     const expectedIds = Array.from(expected.visibleIds).sort((a, b) => a - b);
     const args = visibility.indirectArguments;
+    const indirectRecordMatches = LOD_MESH_RANGES.map((range, lod) => {
+      const offset = lod * 5;
+      return (
+        args[offset] === range.indexCount &&
+        args[offset + 1] === visibility.lodCounts[lod] &&
+        args[offset + 2] === range.firstIndex &&
+        args[offset + 3] === range.baseVertex &&
+        args[offset + 4] === 0
+      );
+    });
     return {
       fixtureCount: count,
       visibleCount: visibility.visibleCount,
       overflowCount: visibility.overflowCount,
+      lodCounts: Array.from(visibility.lodCounts),
+      indirectArguments: Array.from(args),
+      expectedVisibleCount: expected.visibleCount,
+      indirectRecordMatches,
       idsMatch:
         actualIds.length === expectedIds.length &&
         actualIds.every((value, index) => value === expectedIds[index]),
       indirectMatch:
-        args.length === 5 &&
-        args[0] === DRONE_INDICES.length &&
-        args[1] === expected.visibleCount &&
-        args[2] === 0 &&
-        args[3] === 0 &&
-        args[4] === 0,
+        args.length === 15 &&
+        indirectRecordMatches.every(Boolean) &&
+        visibility.visibleCount === expected.visibleCount,
     };
   }
 

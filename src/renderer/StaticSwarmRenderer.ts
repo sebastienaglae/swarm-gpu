@@ -1,9 +1,13 @@
 import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
+import { VISIBLE_ID_BYTES } from '../culling/CullingModel';
 import {
-  INDIRECT_ARGUMENT_BYTES,
-  VISIBILITY_COUNTER_BYTES,
-  VISIBLE_ID_BYTES,
-} from '../culling/CullingModel';
+  LOD_COUNT,
+  LOD_COUNTER_BYTES,
+  LOD_COUNTER_STRIDE_BYTES,
+  LOD_INDIRECT_BYTES,
+  LOD_INDIRECT_STRIDE_BYTES,
+  LOD_VISIBLE_ID_BYTES_PER_INSTANCE,
+} from '../lod/LodModel';
 import type { CanvasSize } from '../gpu/canvasSize';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import backgroundShaderSource from '../shaders/background.wgsl?raw';
@@ -12,16 +16,13 @@ import finalizeIndirectShaderSource from '../shaders/finalize-indirect.wgsl?raw'
 import simulateShaderSource from '../shaders/simulate.wgsl?raw';
 import swarmShaderSource from '../shaders/swarm.wgsl?raw';
 import { SIMULATION_WORKGROUP_SIZE } from '../simulation/SimulationModel';
-import {
-  DRONE_INDICES,
-  DRONE_TRIANGLE_COUNT,
-  DRONE_VERTICES,
-  DRONE_VERTEX_STRIDE,
-} from './DroneMesh';
+import { DRONE_TRIANGLE_COUNT } from './DroneMesh';
+import { LOD_INDICES, LOD_MESH_RANGES, LOD_VERTICES, LOD_VERTEX_STRIDE } from './LodMeshes';
 import {
   GLOBAL_UNIFORM_BYTES,
   GLOBAL_UNIFORM_FLOATS,
   GLOBAL_UNIFORM_USED_BYTES,
+  GLOBAL_OFFSETS,
   type SimulationUniformValues,
   writeGlobalUniforms,
 } from './GlobalUniforms';
@@ -36,7 +37,7 @@ import type { OrbitCamera } from './OrbitCamera';
 export const STATIC_RENDERER_MAX_INSTANCES = 1_000_000;
 export const STATIC_POPULATION_PRESETS = [100_000, 250_000, 500_000, 1_000_000] as const;
 export const BUFFER_UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024;
-export const SWARM_DRAW_CALLS = 1;
+export const SWARM_DRAW_CALLS = 3;
 export const AUXILIARY_DRAW_CALLS = 1;
 export const TOTAL_DRAW_CALLS = SWARM_DRAW_CALLS + AUXILIARY_DRAW_CALLS;
 export const COMPUTE_DISPATCHES = 3;
@@ -52,9 +53,9 @@ export function estimateSimulationStateBytes(capacity: number): number {
       (POSITION_BYTES_PER_INSTANCE * 2 +
         VELOCITY_BYTES_PER_INSTANCE * 2 +
         APPEARANCE_BYTES_PER_INSTANCE +
-        VISIBLE_ID_BYTES) +
-    VISIBILITY_COUNTER_BYTES +
-    INDIRECT_ARGUMENT_BYTES
+        LOD_VISIBLE_ID_BYTES_PER_INSTANCE) +
+    LOD_COUNTER_BYTES +
+    LOD_INDIRECT_BYTES
   );
 }
 
@@ -81,6 +82,8 @@ export interface VisibilityCapture {
   readonly overflowCount: number;
   readonly indirectArguments: Uint32Array;
   readonly visibleIds: Uint32Array;
+  readonly lodCounts: Uint32Array;
+  readonly lodOverflowCounts: Uint32Array;
 }
 
 interface MutableStateBuffers {
@@ -116,7 +119,7 @@ export class StaticSwarmRenderer {
   readonly #initialPositions: Float32Array;
   readonly #initialVelocities: Float32Array;
   readonly #backgroundPipeline: GPURenderPipeline;
-  readonly #swarmPipeline: GPURenderPipeline;
+  readonly #swarmPipelines: readonly [GPURenderPipeline, GPURenderPipeline, GPURenderPipeline];
   readonly #simulationPipeline: GPUComputePipeline;
   readonly #cullingPipeline: GPUComputePipeline;
   readonly #finalizePipeline: GPUComputePipeline;
@@ -175,7 +178,7 @@ export class StaticSwarmRenderer {
     initialPositions: Float32Array,
     initialVelocities: Float32Array,
     backgroundPipeline: GPURenderPipeline,
-    swarmPipeline: GPURenderPipeline,
+    swarmPipelines: readonly [GPURenderPipeline, GPURenderPipeline, GPURenderPipeline],
     simulationPipeline: GPUComputePipeline,
     cullingPipeline: GPUComputePipeline,
     finalizePipeline: GPUComputePipeline,
@@ -207,7 +210,7 @@ export class StaticSwarmRenderer {
     this.#initialPositions = initialPositions;
     this.#initialVelocities = initialVelocities;
     this.#backgroundPipeline = backgroundPipeline;
-    this.#swarmPipeline = swarmPipeline;
+    this.#swarmPipelines = swarmPipelines;
     this.#simulationPipeline = simulationPipeline;
     this.#cullingPipeline = cullingPipeline;
     this.#finalizePipeline = finalizePipeline;
@@ -246,13 +249,13 @@ export class StaticSwarmRenderer {
         GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       );
       const vertexBuffer = createBuffer(
-        'Drone vertices',
-        DRONE_VERTICES.byteLength,
+        'LOD mesh vertices',
+        LOD_VERTICES.byteLength,
         GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       );
       const indexBuffer = createBuffer(
-        'Drone indices',
-        DRONE_INDICES.byteLength,
+        'LOD mesh indices',
+        LOD_INDICES.byteLength,
         GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       );
       const appearanceBuffer = createBuffer(
@@ -275,32 +278,34 @@ export class StaticSwarmRenderer {
       const stateBuffers = [createState('A'), createState('B')] as const;
       const visibleIdsBuffer = createBuffer(
         'Compacted visible instance IDs',
-        capacity * VISIBLE_ID_BYTES,
+        capacity * LOD_VISIBLE_ID_BYTES_PER_INSTANCE,
         GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
       );
       const visibilityCounterBuffer = createBuffer(
         'Visibility counters and capacity',
-        VISIBILITY_COUNTER_BYTES,
+        LOD_COUNTER_BYTES,
         GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
       );
       const indirectBuffer = createBuffer(
         'Indexed indirect arguments',
-        INDIRECT_ARGUMENT_BYTES,
+        LOD_INDIRECT_BYTES,
         GPUBufferUsage.STORAGE |
           GPUBufferUsage.INDIRECT |
           GPUBufferUsage.COPY_DST |
           GPUBufferUsage.COPY_SRC,
       );
 
-      uploadArrayBufferInChunks(device.queue, vertexBuffer, DRONE_VERTICES);
-      uploadArrayBufferInChunks(device.queue, indexBuffer, DRONE_INDICES);
+      uploadArrayBufferInChunks(device.queue, vertexBuffer, LOD_VERTICES);
+      uploadArrayBufferInChunks(device.queue, indexBuffer, LOD_INDICES);
       const instances = createStaticInstanceData(capacity);
       uploadArrayBufferInChunks(device.queue, appearanceBuffer, instances.appearance);
       for (const state of stateBuffers) {
         uploadArrayBufferInChunks(device.queue, state.positions, instances.positions);
         uploadArrayBufferInChunks(device.queue, state.velocities, instances.velocities);
       }
-      device.queue.writeBuffer(visibilityCounterBuffer, 8, new Uint32Array([capacity, 0]));
+      const initialCounters = new Uint32Array(LOD_COUNT * 4);
+      for (let lod = 0; lod < LOD_COUNT; lod += 1) initialCounters[lod * 4 + 2] = capacity;
+      device.queue.writeBuffer(visibilityCounterBuffer, 0, initialCounters);
 
       const renderLayout = device.createBindGroupLayout({
         label: 'GPU swarm render bind group layout',
@@ -324,7 +329,12 @@ export class StaticSwarmRenderer {
             true,
             capacity * VELOCITY_BYTES_PER_INSTANCE,
           ),
-          storageLayoutEntry(4, GPUShaderStage.VERTEX, true, capacity * VISIBLE_ID_BYTES),
+          storageLayoutEntry(
+            4,
+            GPUShaderStage.VERTEX,
+            true,
+            capacity * LOD_VISIBLE_ID_BYTES_PER_INSTANCE,
+          ),
         ],
       });
       const computeLayout = device.createBindGroupLayout({
@@ -373,15 +383,20 @@ export class StaticSwarmRenderer {
             true,
             capacity * POSITION_BYTES_PER_INSTANCE,
           ),
-          storageLayoutEntry(2, GPUShaderStage.COMPUTE, false, capacity * VISIBLE_ID_BYTES),
-          storageLayoutEntry(3, GPUShaderStage.COMPUTE, false, VISIBILITY_COUNTER_BYTES),
+          storageLayoutEntry(
+            2,
+            GPUShaderStage.COMPUTE,
+            false,
+            capacity * LOD_VISIBLE_ID_BYTES_PER_INSTANCE,
+          ),
+          storageLayoutEntry(3, GPUShaderStage.COMPUTE, false, LOD_COUNTER_BYTES),
         ],
       });
       const finalizeLayout = device.createBindGroupLayout({
         label: 'Indirect finalization bind group layout',
         entries: [
-          storageLayoutEntry(0, GPUShaderStage.COMPUTE, false, VISIBILITY_COUNTER_BYTES),
-          storageLayoutEntry(1, GPUShaderStage.COMPUTE, false, INDIRECT_ARGUMENT_BYTES),
+          storageLayoutEntry(0, GPUShaderStage.COMPUTE, false, LOD_COUNTER_BYTES),
+          storageLayoutEntry(1, GPUShaderStage.COMPUTE, false, LOD_INDIRECT_BYTES),
         ],
       });
       const renderPipelineLayout = device.createPipelineLayout({
@@ -428,9 +443,37 @@ export class StaticSwarmRenderer {
         assertShaderCompiles(finalizeModule, 'GPU indirect finalization shader'),
       ]);
 
+      const createSwarmPipeline = (lod: number): Promise<GPURenderPipeline> =>
+        device.createRenderPipelineAsync({
+          label: `GPU swarm LOD ${String(lod)} pipeline`,
+          layout: renderPipelineLayout,
+          vertex: {
+            module: swarmModule,
+            entryPoint: 'vertexMain',
+            constants: { USE_VISIBLE_IDS: indirectRendering ? 1 : 0, LOD_INDEX: lod },
+            buffers: [
+              {
+                arrayStride: LOD_VERTEX_STRIDE,
+                attributes: [
+                  { shaderLocation: 0, offset: 0, format: 'float32x3' },
+                  { shaderLocation: 1, offset: 12, format: 'float32x3' },
+                ],
+              },
+            ],
+          },
+          fragment: {
+            module: swarmModule,
+            entryPoint: 'fragmentMain',
+            targets: [{ format: canvasFormat }],
+          },
+          primitive: { topology: 'triangle-list', cullMode: lod === 2 ? 'none' : 'back' },
+          depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'less' },
+        });
       const [
         backgroundPipeline,
-        swarmPipeline,
+        nearPipeline,
+        midPipeline,
+        farPipeline,
         simulationPipeline,
         cullingPipeline,
         finalizePipeline,
@@ -447,31 +490,9 @@ export class StaticSwarmRenderer {
           primitive: { topology: 'triangle-list' },
           depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'always' },
         }),
-        device.createRenderPipelineAsync({
-          label: 'GPU swarm pipeline',
-          layout: renderPipelineLayout,
-          vertex: {
-            module: swarmModule,
-            entryPoint: 'vertexMain',
-            constants: { USE_VISIBLE_IDS: indirectRendering ? 1 : 0 },
-            buffers: [
-              {
-                arrayStride: DRONE_VERTEX_STRIDE,
-                attributes: [
-                  { shaderLocation: 0, offset: 0, format: 'float32x3' },
-                  { shaderLocation: 1, offset: 12, format: 'float32x3' },
-                ],
-              },
-            ],
-          },
-          fragment: {
-            module: swarmModule,
-            entryPoint: 'fragmentMain',
-            targets: [{ format: canvasFormat }],
-          },
-          primitive: { topology: 'triangle-list', cullMode: 'back', frontFace: 'ccw' },
-          depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'less' },
-        }),
+        createSwarmPipeline(0),
+        createSwarmPipeline(1),
+        createSwarmPipeline(2),
         device.createComputePipelineAsync({
           label: 'GPU simulation pipeline',
           layout: computePipelineLayout,
@@ -496,6 +517,7 @@ export class StaticSwarmRenderer {
           compute: { module: finalizeModule, entryPoint: 'finalizeIndirect' },
         }),
       ]);
+      const swarmPipelines = [nearPipeline, midPipeline, farPipeline] as const;
 
       const createRenderBindGroup = (state: MutableStateBuffers, index: number): GPUBindGroup =>
         device.createBindGroup({
@@ -580,7 +602,7 @@ export class StaticSwarmRenderer {
         instances.positions,
         instances.velocities,
         backgroundPipeline,
-        swarmPipeline,
+        swarmPipelines,
         simulationPipeline,
         cullingPipeline,
         finalizePipeline,
@@ -631,6 +653,7 @@ export class StaticSwarmRenderer {
       devicePixelRatio,
       frame,
     );
+    this.#uniformStaging[GLOBAL_OFFSETS.simulationC + 3] = this.capacity;
     this.#device.queue.writeBuffer(
       this.#uniformBuffer,
       0,
@@ -647,6 +670,8 @@ export class StaticSwarmRenderer {
     const encoder = this.#device.createCommandEncoder(this.#commandEncoderDescriptor);
     if (this.indirectRendering) {
       encoder.clearBuffer(this.#visibilityCounterBuffer, 0, 8);
+      encoder.clearBuffer(this.#visibilityCounterBuffer, LOD_COUNTER_STRIDE_BYTES, 8);
+      encoder.clearBuffer(this.#visibilityCounterBuffer, LOD_COUNTER_STRIDE_BYTES * 2, 8);
       encoder.clearBuffer(this.#indirectBuffer);
     }
     const computePass = encoder.beginComputePass(this.#computePassDescriptor);
@@ -667,11 +692,19 @@ export class StaticSwarmRenderer {
     renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
     renderPass.setPipeline(this.#backgroundPipeline);
     renderPass.draw(3);
-    renderPass.setPipeline(this.#swarmPipeline);
     renderPass.setVertexBuffer(0, this.#vertexBuffer);
     renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
-    if (this.indirectRendering) renderPass.drawIndexedIndirect(this.#indirectBuffer, 0);
-    else renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
+    if (this.indirectRendering) {
+      renderPass.setPipeline(this.#swarmPipelines[0]);
+      renderPass.drawIndexedIndirect(this.#indirectBuffer, 0);
+      renderPass.setPipeline(this.#swarmPipelines[1]);
+      renderPass.drawIndexedIndirect(this.#indirectBuffer, LOD_INDIRECT_STRIDE_BYTES);
+      renderPass.setPipeline(this.#swarmPipelines[2]);
+      renderPass.drawIndexedIndirect(this.#indirectBuffer, LOD_INDIRECT_STRIDE_BYTES * 2);
+    } else {
+      renderPass.setPipeline(this.#swarmPipelines[0]);
+      renderPass.drawIndexed(LOD_MESH_RANGES[0]?.indexCount ?? 0, safeInstanceCount);
+    }
     renderPass.end();
     this.#submission[0] = encoder.finish(this.#commandBufferDescriptor);
     this.#device.queue.submit(this.#submission);
@@ -739,15 +772,16 @@ export class StaticSwarmRenderer {
   public async captureVisibility(maxVisibleIds = 64): Promise<VisibilityCapture> {
     if (this.#destroyed) throw new Error('Cannot inspect a destroyed renderer');
     const idCount = Math.min(this.capacity, Math.max(0, Math.floor(maxVisibleIds)));
-    const idBytes = idCount * VISIBLE_ID_BYTES;
+    const idBytesPerLod = idCount * VISIBLE_ID_BYTES;
+    const idBytes = idBytesPerLod * LOD_COUNT;
     const counterReadback = this.#device.createBuffer({
       label: 'Explicit debug visibility counter readback',
-      size: VISIBILITY_COUNTER_BYTES,
+      size: LOD_COUNTER_BYTES,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
     const indirectReadback = this.#device.createBuffer({
       label: 'Explicit debug indirect arguments readback',
-      size: INDIRECT_ARGUMENT_BYTES,
+      size: LOD_INDIRECT_BYTES,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
     const idsReadback = this.#device.createBuffer({
@@ -762,17 +796,19 @@ export class StaticSwarmRenderer {
         0,
         counterReadback,
         0,
-        VISIBILITY_COUNTER_BYTES,
+        LOD_COUNTER_BYTES,
       );
-      encoder.copyBufferToBuffer(
-        this.#indirectBuffer,
-        0,
-        indirectReadback,
-        0,
-        INDIRECT_ARGUMENT_BYTES,
-      );
-      if (idBytes > 0) {
-        encoder.copyBufferToBuffer(this.#visibleIdsBuffer, 0, idsReadback, 0, idBytes);
+      encoder.copyBufferToBuffer(this.#indirectBuffer, 0, indirectReadback, 0, LOD_INDIRECT_BYTES);
+      if (idBytesPerLod > 0) {
+        for (let lod = 0; lod < LOD_COUNT; lod += 1) {
+          encoder.copyBufferToBuffer(
+            this.#visibleIdsBuffer,
+            lod * this.capacity * VISIBLE_ID_BYTES,
+            idsReadback,
+            lod * idBytesPerLod,
+            idBytesPerLod,
+          );
+        }
       }
       this.#device.queue.submit([encoder.finish()]);
       await Promise.all([
@@ -781,17 +817,37 @@ export class StaticSwarmRenderer {
         idsReadback.mapAsync(GPUMapMode.READ),
       ]);
       const counters = new Uint32Array(counterReadback.getMappedRange());
-      const appendedCount = counters[0] ?? 0;
-      const visibleCount = Math.min(appendedCount, this.capacity);
-      const capturedIds = Math.min(visibleCount, idCount);
+      const lodCounts = new Uint32Array(LOD_COUNT);
+      const lodOverflowCounts = new Uint32Array(LOD_COUNT);
+      let appendedCount = 0;
+      let visibleCount = 0;
+      let overflowCount = 0;
+      for (let lod = 0; lod < LOD_COUNT; lod += 1) {
+        const appended = counters[lod * 4] ?? 0;
+        lodCounts[lod] = Math.min(appended, this.capacity);
+        lodOverflowCounts[lod] = counters[lod * 4 + 1] ?? 0;
+        appendedCount += appended;
+        visibleCount += lodCounts[lod] ?? 0;
+        overflowCount += lodOverflowCounts[lod] ?? 0;
+      }
+      const mappedIds = new Uint32Array(idsReadback.getMappedRange());
+      const capturedIds = new Uint32Array(
+        lodCounts.reduce((total, count) => total + Math.min(count, idCount), 0),
+      );
+      let destination = 0;
+      for (let lod = 0; lod < LOD_COUNT; lod += 1) {
+        const count = Math.min(lodCounts[lod] ?? 0, idCount);
+        capturedIds.set(mappedIds.subarray(lod * idCount, lod * idCount + count), destination);
+        destination += count;
+      }
       return {
         appendedCount,
         visibleCount,
-        overflowCount: counters[1] ?? 0,
+        overflowCount,
         indirectArguments: new Uint32Array(indirectReadback.getMappedRange().slice(0)),
-        visibleIds: new Uint32Array(
-          idsReadback.getMappedRange().slice(0, capturedIds * VISIBLE_ID_BYTES),
-        ),
+        visibleIds: capturedIds,
+        lodCounts,
+        lodOverflowCounts,
       };
     } finally {
       counterReadback.destroy();
@@ -823,6 +879,7 @@ export class StaticSwarmRenderer {
       devicePixelRatio,
       frame,
     );
+    this.#uniformStaging[GLOBAL_OFFSETS.simulationC + 3] = this.capacity;
     this.#device.queue.writeBuffer(
       this.#uniformBuffer,
       0,
@@ -852,6 +909,8 @@ export class StaticSwarmRenderer {
       const encoder = this.#device.createCommandEncoder({ label: 'Explicit benchmark frame' });
       if (this.indirectRendering) {
         encoder.clearBuffer(this.#visibilityCounterBuffer, 0, 8);
+        encoder.clearBuffer(this.#visibilityCounterBuffer, LOD_COUNTER_STRIDE_BYTES, 8);
+        encoder.clearBuffer(this.#visibilityCounterBuffer, LOD_COUNTER_STRIDE_BYTES * 2, 8);
         encoder.clearBuffer(this.#indirectBuffer);
       }
       const computePass = encoder.beginComputePass({
@@ -895,11 +954,19 @@ export class StaticSwarmRenderer {
       renderPass.setBindGroup(0, this.#renderBindGroups[destinationParity]);
       renderPass.setPipeline(this.#backgroundPipeline);
       renderPass.draw(3);
-      renderPass.setPipeline(this.#swarmPipeline);
       renderPass.setVertexBuffer(0, this.#vertexBuffer);
       renderPass.setIndexBuffer(this.#indexBuffer, 'uint16');
-      if (this.indirectRendering) renderPass.drawIndexedIndirect(this.#indirectBuffer, 0);
-      else renderPass.drawIndexed(DRONE_INDICES.length, safeInstanceCount);
+      if (this.indirectRendering) {
+        renderPass.setPipeline(this.#swarmPipelines[0]);
+        renderPass.drawIndexedIndirect(this.#indirectBuffer, 0);
+        renderPass.setPipeline(this.#swarmPipelines[1]);
+        renderPass.drawIndexedIndirect(this.#indirectBuffer, LOD_INDIRECT_STRIDE_BYTES);
+        renderPass.setPipeline(this.#swarmPipelines[2]);
+        renderPass.drawIndexedIndirect(this.#indirectBuffer, LOD_INDIRECT_STRIDE_BYTES * 2);
+      } else {
+        renderPass.setPipeline(this.#swarmPipelines[0]);
+        renderPass.drawIndexed(LOD_MESH_RANGES[0]?.indexCount ?? 0, safeInstanceCount);
+      }
       renderPass.end();
       encoder.resolveQuerySet(querySet, 0, queryCount, resolveBuffer, 0);
       encoder.copyBufferToBuffer(resolveBuffer, 0, readbackBuffer, 0, queryBytes);

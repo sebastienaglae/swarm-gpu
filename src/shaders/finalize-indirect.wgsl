@@ -1,4 +1,4 @@
-struct VisibilityCounters {
+struct LodCounter {
   visibleCount: atomic<u32>,
   overflowCount: atomic<u32>,
   capacity: u32,
@@ -13,14 +13,18 @@ struct IndirectArguments {
   firstInstance: u32,
 };
 
-@group(0) @binding(0) var<storage, read_write> counters: VisibilityCounters;
-@group(0) @binding(1) var<storage, read_write> indirect: IndirectArguments;
+@group(0) @binding(0) var<storage, read_write> counters: array<LodCounter, 3>;
+@group(0) @binding(1) var<storage, read_write> indirect: array<IndirectArguments, 3>;
 
-@compute @workgroup_size(1)
-fn finalizeIndirect() {
-  indirect.indexCount = 36u;
-  indirect.instanceCount = min(atomicLoad(&counters.visibleCount), counters.capacity);
-  indirect.firstIndex = 0u;
-  indirect.baseVertex = 0;
-  indirect.firstInstance = 0u;
+const INDEX_COUNTS = array<u32, 3>(36u, 18u, 6u);
+const FIRST_INDICES = array<u32, 3>(0u, 36u, 54u);
+const BASE_VERTICES = array<i32, 3>(0, 8, 13);
+
+@compute @workgroup_size(3)
+fn finalizeIndirect(@builtin(local_invocation_index) lod: u32) {
+  indirect[lod].indexCount = INDEX_COUNTS[lod];
+  indirect[lod].instanceCount = min(atomicLoad(&counters[lod].visibleCount), counters[lod].capacity);
+  indirect[lod].firstIndex = FIRST_INDICES[lod];
+  indirect[lod].baseVertex = BASE_VERTICES[lod];
+  indirect[lod].firstInstance = 0u;
 }

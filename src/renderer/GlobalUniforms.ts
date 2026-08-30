@@ -1,9 +1,9 @@
 import { readNumber } from '../math/typedArray';
 import type { OrbitCamera } from './OrbitCamera';
 
-export const GLOBAL_UNIFORM_FLOATS = 96;
+export const GLOBAL_UNIFORM_FLOATS = 112;
 export const GLOBAL_UNIFORM_BYTES = GLOBAL_UNIFORM_FLOATS * Float32Array.BYTES_PER_ELEMENT;
-export const GLOBAL_UNIFORM_USED_FLOATS = 96;
+export const GLOBAL_UNIFORM_USED_FLOATS = 100;
 export const GLOBAL_UNIFORM_USED_BYTES =
   GLOBAL_UNIFORM_USED_FLOATS * Float32Array.BYTES_PER_ELEMENT;
 
@@ -18,6 +18,7 @@ export const GLOBAL_OFFSETS = {
   simulationB: 64,
   simulationC: 68,
   frustumPlanes: 72,
+  lodParameters: 96,
 } as const;
 
 export interface SimulationUniformValues {
@@ -35,6 +36,10 @@ export interface SimulationUniformValues {
   readonly frameIndex: number;
   readonly benchmarkVisibilityFraction?: number;
   readonly benchmarkVisibilityEnabled?: number;
+  readonly lodNearPixels?: number;
+  readonly lodMidPixels?: number;
+  readonly lodFarPixels?: number;
+  readonly lodMode?: number;
 }
 
 export function writeGlobalUniforms(
@@ -76,4 +81,8 @@ export function writeGlobalUniforms(
   target[GLOBAL_OFFSETS.simulationC + 1] = simulation.benchmarkVisibilityFraction ?? 1;
   target[GLOBAL_OFFSETS.simulationC + 2] = simulation.benchmarkVisibilityEnabled ?? 0;
   target.set(camera.frustumPlanes, GLOBAL_OFFSETS.frustumPlanes);
+  target[GLOBAL_OFFSETS.lodParameters] = simulation.lodNearPixels ?? 8;
+  target[GLOBAL_OFFSETS.lodParameters + 1] = simulation.lodMidPixels ?? 2;
+  target[GLOBAL_OFFSETS.lodParameters + 2] = simulation.lodFarPixels ?? 0.35;
+  target[GLOBAL_OFFSETS.lodParameters + 3] = simulation.lodMode ?? -1;
 }

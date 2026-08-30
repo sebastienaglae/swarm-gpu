@@ -9,9 +9,10 @@ struct Globals {
   simulationB: vec4<f32>,
   simulationC: vec4<f32>,
   frustumPlanes: array<vec4<f32>, 6>,
+  lodParameters: vec4<f32>,
 };
 
-struct VisibilityCounters {
+struct LodCounter {
   visibleCount: atomic<u32>,
   overflowCount: atomic<u32>,
   capacity: u32,
@@ -21,7 +22,7 @@ struct VisibilityCounters {
 @group(0) @binding(0) var<uniform> globals: Globals;
 @group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> visibleIds: array<u32>;
-@group(0) @binding(3) var<storage, read_write> counters: VisibilityCounters;
+@group(0) @binding(3) var<storage, read_write> counters: array<LodCounter, 3>;
 
 fn sphereVisible(center: vec3<f32>, radius: f32) -> bool {
   for (var planeIndex = 0u; planeIndex < 6u; planeIndex += 1u) {
@@ -49,11 +50,25 @@ fn cull(@builtin(global_invocation_id) invocation: vec3<u32>) {
   if (!visible) {
     return;
   }
-  let destination = atomicAdd(&counters.visibleCount, 1u);
-  let capacity = counters.capacity;
+  let viewPosition = globals.view * vec4<f32>(state.xyz, 1.0);
+  let viewDepth = max(0.0001, -viewPosition.z);
+  let projectedRadius = radius * globals.projection[1][1] * globals.viewportAndCount.y * 0.5 / viewDepth;
+  var lod = 2u;
+  if (projectedRadius >= globals.lodParameters.x) {
+    lod = 0u;
+  } else if (projectedRadius >= globals.lodParameters.y) {
+    lod = 1u;
+  } else if (projectedRadius < globals.lodParameters.z) {
+    return;
+  }
+  if (globals.lodParameters.w >= 0.0) {
+    lod = min(2u, u32(globals.lodParameters.w));
+  }
+  let destination = atomicAdd(&counters[lod].visibleCount, 1u);
+  let capacity = counters[lod].capacity;
   if (destination < capacity) {
-    visibleIds[destination] = instanceId;
+    visibleIds[lod * capacity + destination] = instanceId;
   } else {
-    atomicAdd(&counters.overflowCount, 1u);
+    atomicAdd(&counters[lod].overflowCount, 1u);
   }
 }

@@ -37,7 +37,7 @@ describe('static instance generation', () => {
   });
 
   it('estimates simulation, appearance, visible IDs, counters, and indirect arguments', () => {
-    expect(estimateSimulationStateBytes(500_000)).toBe(42_000_036);
+    expect(estimateSimulationStateBytes(500_000)).toBe(46_000_108);
     expect(() => estimateSimulationStateBytes(-1)).toThrow(RangeError);
   });
 });

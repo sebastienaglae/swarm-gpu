@@ -9,8 +9,8 @@ import { OrbitCamera } from '../../src/renderer/OrbitCamera';
 
 describe('global uniform layout', () => {
   it('uses an aligned persistent block with stable field offsets', () => {
-    expect(GLOBAL_UNIFORM_BYTES).toBe(384);
-    expect(GLOBAL_UNIFORM_USED_BYTES).toBe(384);
+    expect(GLOBAL_UNIFORM_BYTES).toBe(448);
+    expect(GLOBAL_UNIFORM_USED_BYTES).toBe(400);
     const camera = new OrbitCamera();
     camera.update();
     const target = new Float32Array(GLOBAL_UNIFORM_FLOATS);
@@ -41,7 +41,7 @@ describe('global uniform layout', () => {
   it('rejects undersized staging memory', () => {
     const camera = new OrbitCamera();
     expect(() => {
-      writeGlobalUniforms(new Float32Array(95), camera, 0, 1, 1, 1, 1, {
+      writeGlobalUniforms(new Float32Array(111), camera, 0, 1, 1, 1, 1, {
         deltaSeconds: 0,
         attractorX: 0,
         attractorY: 0,
