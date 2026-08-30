@@ -1,4 +1,5 @@
 import { DiagnosticsOverlay } from '../diagnostics/DiagnosticsOverlay';
+import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
 import type { CanvasSize } from '../gpu/canvasSize';
 import { computeCanvasSize } from '../gpu/canvasSize';
 import { createGpuContext, type GpuContext } from '../gpu/createGpuContext';
@@ -30,6 +31,7 @@ export class App {
   readonly #input = new InputState();
   readonly #cameraInput = new Float32Array(3);
   readonly #camera = new OrbitCamera();
+  readonly #frameIntervalSamples = new FrameSampleRecorder();
   readonly #resizeObserver: ResizeObserver;
   #gpu: GpuContext | undefined;
   #renderer: StaticSwarmRenderer | undefined;
@@ -68,6 +70,7 @@ export class App {
 
       if (this.#lastFrameTimestamp > 0) {
         const interval = timestamp - this.#lastFrameTimestamp;
+        this.#frameIntervalSamples.record(interval);
         this.#smoothedFrameInterval += (interval - this.#smoothedFrameInterval) * 0.08;
       }
       this.#lastFrameTimestamp = timestamp;
@@ -253,6 +256,21 @@ export class App {
   public simulateDeviceLossForDevelopment(): void {
     if (!import.meta.env.DEV || this.state.current === 'disposed') return;
     this.#gpu?.device.destroy();
+  }
+
+  public resetPerformanceSamples(): void {
+    this.#frameIntervalSamples.reset();
+    this.#renderer?.resetPerformanceSamples();
+  }
+
+  public capturePerformanceSamples(): {
+    readonly frameIntervalMs: number[];
+    readonly cpuFrameMs: number[];
+  } {
+    return {
+      frameIntervalMs: this.#frameIntervalSamples.snapshot(),
+      cpuFrameMs: this.#renderer?.captureCpuFrameSamples() ?? [],
+    };
   }
 
   public dispose(): void {

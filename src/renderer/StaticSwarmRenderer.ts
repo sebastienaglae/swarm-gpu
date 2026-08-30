@@ -1,5 +1,6 @@
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import type { CanvasSize } from '../gpu/canvasSize';
+import { FrameSampleRecorder } from '../diagnostics/FrameSampleRecorder';
 import backgroundShaderSource from '../shaders/background.wgsl?raw';
 import swarmShaderSource from '../shaders/swarm.wgsl?raw';
 import {
@@ -39,6 +40,7 @@ export class StaticSwarmRenderer {
   readonly #device: GPUDevice;
   readonly #resources = new ResourceRegistry();
   readonly #uniformStaging = new Float32Array(GLOBAL_UNIFORM_FLOATS);
+  readonly #cpuFrameSamples = new FrameSampleRecorder();
   readonly #uniformBuffer: GPUBuffer;
   readonly #vertexBuffer: GPUBuffer;
   readonly #indexBuffer: GPUBuffer;
@@ -340,6 +342,15 @@ export class StaticSwarmRenderer {
     this.#submission[0] = encoder.finish(this.#commandBufferDescriptor);
     this.#device.queue.submit(this.#submission);
     this.lastCpuFrameMs = performance.now() - start;
+    this.#cpuFrameSamples.record(this.lastCpuFrameMs);
+  }
+
+  public resetPerformanceSamples(): void {
+    this.#cpuFrameSamples.reset();
+  }
+
+  public captureCpuFrameSamples(): number[] {
+    return this.#cpuFrameSamples.snapshot();
   }
 
   public destroy(): void {
