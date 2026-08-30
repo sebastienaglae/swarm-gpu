@@ -44,3 +44,15 @@ The retained Phase 02 evidence records source inspection and benchmark behavior 
 - The simulation dispatch, render pass, and submission share one command encoder. No instance loop, mapped buffer, promise, descriptor construction, or debug counter readback occurs in the interactive path.
 - Reset performs bounded chunk uploads of retained initial arrays only on explicit user action; it does not rebuild pipelines, layouts, or bind groups.
 - Fixture capture and timestamp resolution are explicit paused-development operations and are excluded from interactive allocation/readback claims.
+
+## Phase 04 culling audit
+
+- Visible IDs, counters, indirect arguments, culling bind groups, and both compute pipelines are
+  created once. The frame only clears two persistent ranges, selects parity bind groups, and encodes
+  three dispatches plus `drawIndexedIndirect`.
+- The CPU never iterates over instances or retrieves the visible count during interactive frames.
+  The overlay deliberately reports `GPU-resident` instead of manufacturing a synchronized number.
+- `captureVisibility` creates and maps readback buffers only through an explicit paused development
+  action. Benchmark timestamp mapping occurs after the 20-second interactive measurement window.
+- The deterministic visibility control mutates existing uniform fields and is enabled only by the
+  benchmark query parameter; it does not allocate inside the loop.

@@ -34,33 +34,33 @@ Every atomic append checks destination capacity. Correctness must not depend on 
 
 ### Frustum data
 
-- [ ] Extract six normalized planes from the exact view-projection convention.
-- [ ] Upload planes in a stable aligned global block.
-- [ ] Define sphere radius from mesh bound multiplied by per-instance scale and a documented safety margin.
-- [ ] Unit-test points/spheres inside, outside each plane, intersecting, behind camera, and at far limit.
+- [x] Extract six normalized planes from the exact view-projection convention.
+- [x] Upload planes in a stable aligned global block.
+- [x] Define sphere radius from mesh bound multiplied by per-instance scale and a documented safety margin.
+- [x] Unit-test points/spheres inside, outside each plane, intersecting, behind camera, and at far limit.
 
 ### Counter reset and culling
 
-- [ ] Reset counters and indirect instance fields before append dispatch.
-- [ ] Cull active instances with guarded invocation IDs.
-- [ ] Atomically reserve output slots and write source instance IDs.
-- [ ] Prevent writes when the reserved slot is outside capacity, while tracking overflow in diagnostic builds.
-- [ ] Keep culling conservative to prevent visible popping at the frustum edge.
+- [x] Reset counters and indirect instance fields before append dispatch.
+- [x] Cull active instances with guarded invocation IDs.
+- [x] Atomically reserve output slots and write source instance IDs.
+- [x] Prevent writes when the reserved slot is outside capacity, while tracking overflow in diagnostic builds.
+- [x] Keep culling conservative to prevent visible popping at the frustum edge.
 
 ### Indirect generation
 
-- [ ] Finalize one valid indirect record from GPU counters without CPU intervention.
-- [ ] Use `drawIndexedIndirect` with offsets validated against WebGPU alignment requirements.
-- [ ] Modify vertex fetching so `instance_index` selects a compact visible ID, then fetches simulation and appearance state.
-- [ ] Preserve a development direct-draw/reference path behind a build/debug control.
-- [ ] Assert resource usages include STORAGE, INDIRECT, COPY_DST/COPY_SRC only where actually needed.
+- [x] Finalize one valid indirect record from GPU counters without CPU intervention.
+- [x] Use `drawIndexedIndirect` with offsets validated against WebGPU alignment requirements.
+- [x] Modify vertex fetching so `instance_index` selects a compact visible ID, then fetches simulation and appearance state.
+- [x] Preserve a development direct-draw/reference path behind a build/debug control.
+- [x] Assert resource usages include STORAGE, INDIRECT, COPY_DST/COPY_SRC only where actually needed.
 
 ### Diagnostics without frame readback
 
-- [ ] Live visible count is either labeled delayed/periodic and read outside critical measurement windows, or omitted when it would violate the contract.
-- [ ] Benchmark mode may copy counters after its measured window and associate results with the report.
-- [ ] Add a debug capture action that pauses, copies visible IDs/counters, validates them, and resumes only on user request.
-- [ ] Ensure default metrics do not call `mapAsync` per frame.
+- [x] Live visible count is either labeled delayed/periodic and read outside critical measurement windows, or omitted when it would violate the contract.
+- [x] Benchmark mode may copy counters after its measured window and associate results with the report.
+- [x] Add a debug capture action that pauses, copies visible IDs/counters, validates them, and resumes only on user request.
+- [x] Ensure default metrics do not call `mapAsync` per frame.
 
 ## Correctness tests
 

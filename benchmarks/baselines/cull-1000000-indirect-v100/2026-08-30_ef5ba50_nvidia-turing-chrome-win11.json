@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "id": "CULL-1000000-INDIRECT-V100",
+    "population": 1000000,
+    "mode": "indirect",
+    "visibility": 100,
+    "width": 1280,
+    "height": 720,
+    "workgroupSize": 128,
+    "fixedTimestepSeconds": 0.016666666666666666
+  },
+  "source": {
+    "commit": "ef5ba50",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T14:57:45.861Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Google Chrome 151.0.7922.174 (Playwright channel chrome, headless)",
+    "adapter": "nvidia turing"
+  },
+  "measurement": {
+    "warmupSeconds": 5,
+    "sampleSeconds": 20,
+    "gpuSampleCount": 10
+  },
+  "results": {
+    "frameIntervalMs": {
+      "median": 16.700001,
+      "p95": 17.1,
+      "p99": 19
+    },
+    "cpuFrameMs": {
+      "median": 0.3,
+      "p95": 1.3,
+      "p99": 5.7
+    },
+    "gpuSimulationMs": {
+      "median": 0.524288,
+      "p95": 0.720896,
+      "p99": 0.720896
+    },
+    "gpuCullingMs": {
+      "median": 0.131072,
+      "p95": 0.196608,
+      "p99": 0.196608
+    },
+    "gpuRenderMs": {
+      "median": 5.308416,
+      "p95": 7.340032,
+      "p99": 7.340032
+    },
+    "gpuTotalMs": {
+      "median": 6.029312,
+      "p95": 8.060928,
+      "p99": 8.060928
+    },
+    "readbacksPerInteractiveFrame": 0
+  }
+}

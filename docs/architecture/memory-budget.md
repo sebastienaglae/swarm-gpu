@@ -56,3 +56,11 @@ Update this worksheet and ADR 0002 when element strides, ping-pong ownership, LO
 Simulation allocates the two position copies, two velocity copies, and one appearance buffer: 80 bytes per selected capacity instance. Visible-ID storage remains planned for Phase 04 and is not yet allocated. Consequently the renderer reports 76.3 MiB of state at the one-million capacity and 38.1 MiB for 500k; depth and small fixed resources are reported separately by benchmark estimates.
 
 The application shows this planned state allocation alongside adapter capacity before creating the simulation buffers. Runtime allocation is capped at one million even when the Phase 01 planning formula reports a higher future capacity.
+
+## Phase 04 realized allocation
+
+The single-list culling implementation adds one 4-byte visible ID per capacity instance, a 16-byte
+counter/capacity block, and one 20-byte indexed indirect record. Realized variable storage is
+therefore 84 bytes per instance rather than the 92-byte three-LOD planning bound. At one million
+capacity the renderer allocates 84,000,036 bytes (80.1 MiB) of tracked state. Phase 05 may move to
+the planned three-list layout and must update both this figure and runtime diagnostics.

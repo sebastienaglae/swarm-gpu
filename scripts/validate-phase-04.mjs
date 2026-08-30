@@ -24,7 +24,9 @@ try {
   if (!visibility.idsMatch || !visibility.indirectMatch || visibility.overflowCount !== 0) {
     throw new Error(`Visibility validation failed: ${JSON.stringify(visibility)}`);
   }
-  if (messages.some((message) => message.startsWith('error:') || message.startsWith('pageerror:'))) {
+  if (
+    messages.some((message) => message.startsWith('error:') || message.startsWith('pageerror:'))
+  ) {
     throw new Error(messages.join('\n'));
   }
   process.stdout.write(`${JSON.stringify({ state, visibility, messages }, null, 2)}\n`);
@@ -34,7 +36,10 @@ try {
     title: document.querySelector('#status-title')?.textContent,
     message: document.querySelector('#status-message')?.textContent,
   }));
-  throw new Error(`${error instanceof Error ? error.message : String(error)}\n${JSON.stringify({ snapshot, messages }, null, 2)}`);
+  throw new Error(
+    `${error instanceof Error ? error.message : String(error)}\n${JSON.stringify({ snapshot, messages }, null, 2)}`,
+    { cause: error },
+  );
 } finally {
   await browser.close();
 }
