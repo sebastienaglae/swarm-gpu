@@ -125,11 +125,20 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#metric-adapter')).toHaveText('Mock discrete adapter');
   await expect(page.locator('#metric-timestamp')).toHaveText('available');
   await expect(page.locator('#metric-canvas')).not.toHaveText('0 × 0');
+  await page.setViewportSize({ width: 900, height: 600 });
+  await expect(page.locator('#metric-canvas')).toHaveText('900 × 600');
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__')))
     .toBeGreaterThan(0);
   await page.locator('#pause-button').click();
   await expect(page.locator('html')).toHaveAttribute('data-app-state', 'paused');
+  const pausedSubmitCount = await page.evaluate(() =>
+    Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__'),
+  );
+  await page.waitForTimeout(100);
+  expect(await page.evaluate(() => Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__'))).toBe(
+    pausedSubmitCount,
+  );
   await page.locator('#pause-button').click();
   await expect(page.locator('html')).toHaveAttribute('data-app-state', 'running');
   await page.locator('#reset-button').click();
@@ -150,4 +159,18 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#status-title')).toHaveText('GPU recovery stopped');
   await page.locator('#retry-button').click();
   await expect(page.locator('html')).toHaveAttribute('data-app-state', 'running');
+
+  await page.evaluate(() => {
+    const app = Reflect.get(globalThis, '__SWARM_GPU_APP__');
+    app.dispose();
+    app.dispose();
+  });
+  await expect(page.locator('html')).toHaveAttribute('data-app-state', 'disposed');
+  const disposedSubmitCount = await page.evaluate(() =>
+    Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__'),
+  );
+  await page.waitForTimeout(100);
+  expect(await page.evaluate(() => Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__'))).toBe(
+    disposedSubmitCount,
+  );
 });

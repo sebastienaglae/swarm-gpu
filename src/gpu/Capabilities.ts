@@ -123,6 +123,10 @@ export function captureAdapterCapabilities(
   requestedInstances = 1_000_000,
 ): AdapterCapabilities {
   const { info, limits } = adapter;
+  const adapterDescription =
+    info.description ||
+    [info.vendor, info.architecture].filter(Boolean).join(' ') ||
+    'WebGPU adapter';
   const capacityLimits: CapacityLimits = {
     maxBufferSize: limits.maxBufferSize,
     maxStorageBufferBindingSize: limits.maxStorageBufferBindingSize,
@@ -130,7 +134,7 @@ export function captureAdapterCapabilities(
   };
 
   return {
-    adapterDescription: info.description || 'WebGPU adapter',
+    adapterDescription,
     architecture: info.architecture,
     vendor: info.vendor,
     device: info.device,
