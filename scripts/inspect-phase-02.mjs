@@ -3,7 +3,10 @@ import { chromium } from '@playwright/test';
 const url = process.argv[2] ?? 'http://localhost:5174/';
 const output = process.argv[3] ?? 'docs/evidence/phase-02/static-swarm-100k.png';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+const page = await browser.newPage({
+  viewport: { width: 1920, height: 1080 },
+  deviceScaleFactor: 1,
+});
 const messages = [];
 page.on('console', (message) => messages.push(`${message.type()}: ${message.text()}`));
 page.on('pageerror', (error) => messages.push(`pageerror: ${error.message}`));

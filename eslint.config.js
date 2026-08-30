@@ -24,7 +24,13 @@ export default tseslint.config(
     },
   },
   {
-    files: ['playwright.config.ts', 'tests/e2e/**/*.ts'],
+    files: ['playwright.config.ts', 'tests/e2e/**/*.ts', 'scripts/**/*.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { document: 'readonly', process: 'readonly' },
+    },
   },
 );
