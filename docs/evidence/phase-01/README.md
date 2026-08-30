@@ -6,7 +6,7 @@ Evidence was captured on the reference development machine described in `docs/re
 
 - `npm run check`: formatting, strict ESLint, strict TypeScript, 20 unit tests, and production build pass locally.
 - `npm run test:e2e`: three Chromium flows pass: unsupported WebGPU, sanitized initialization failure/retry, and a complete supported contract with rendering, pause/resume/reset, bounded recovery, and manual retry.
-- Production output at capture: 1.96 kB HTML, 1.90 kB CSS, and 13.62 kB JavaScript before gzip figures shown by Vite.
+- Production output at capture: 1.96 kB HTML, 1.90 kB CSS, and 13.76 kB JavaScript before gzip figures shown by Vite.
 
 ## Hardware WebGPU smoke
 

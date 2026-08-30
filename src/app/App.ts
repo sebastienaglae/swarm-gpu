@@ -82,6 +82,10 @@ export class App {
     this.reset();
   };
 
+  readonly #onWindowResize = (): void => {
+    this.#resize(this.#canvas.clientWidth, this.#canvas.clientHeight);
+  };
+
   readonly #onVisibilityChange = (): void => {
     if (document.hidden && this.state.current === 'running') {
       this.#visibilityPaused = true;
@@ -221,6 +225,7 @@ export class App {
     this.#resizeObserver.observe(this.#canvas);
     this.#pauseButton.addEventListener('click', this.#onPauseToggle);
     this.#resetButton.addEventListener('click', this.#onReset);
+    window.addEventListener('resize', this.#onWindowResize);
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
@@ -231,6 +236,7 @@ export class App {
     this.#resizeObserver.disconnect();
     this.#pauseButton.removeEventListener('click', this.#onPauseToggle);
     this.#resetButton.removeEventListener('click', this.#onReset);
+    window.removeEventListener('resize', this.#onWindowResize);
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
