@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "id": "SIM-500000-WG256-1280X720",
+    "seed": 1511508451,
+    "instanceCount": 500000,
+    "canvasWidth": 1280,
+    "canvasHeight": 720,
+    "fixedTimestepSeconds": 0.016666666666666666,
+    "workgroupSize": 256
+  },
+  "source": {
+    "commit": "1a0b090",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T14:15:20.055Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Google Chrome 151.0.7922.174 (Playwright channel chrome, headless)",
+    "powerPreference": "high-performance"
+  },
+  "adapter": {
+    "description": "nvidia turing",
+    "driver": "Not exposed by WebGPU adapter metadata",
+    "timestampQuery": true
+  },
+  "measurement": {
+    "warmupSeconds": 5,
+    "sampleSeconds": 20,
+    "frameSampleCount": 1201,
+    "gpuSampleCount": 10,
+    "longFrameThresholdMs": 33.33
+  },
+  "results": {
+    "frameIntervalMs": {
+      "median": 16.700001,
+      "p95": 16.9,
+      "p99": 17
+    },
+    "cpuFrameMs": {
+      "median": 0.3,
+      "p95": 1.2,
+      "p99": 2.2
+    },
+    "gpuComputeMs": {
+      "median": 0.262144,
+      "p95": 0.32768,
+      "p99": 0.32768
+    },
+    "gpuRenderMs": {
+      "median": 2.29376,
+      "p95": 3.670016,
+      "p99": 3.670016
+    },
+    "gpuTotalMs": {
+      "median": 2.555904,
+      "p95": 3.93216,
+      "p99": 3.93216
+    },
+    "longFrameCount": 0,
+    "drawCalls": 2,
+    "computeDispatches": 1,
+    "readbacksPerInteractiveFrame": 0,
+    "estimatedExplicitGpuBytes": 43686920
+  }
+}

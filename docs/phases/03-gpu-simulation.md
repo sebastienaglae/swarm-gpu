@@ -36,35 +36,35 @@ Both bind groups are created during initialization. Frame parity selects them wi
 
 ### State and initialization
 
-- [ ] Allocate two position buffers and two velocity buffers at maximum selected capacity.
-- [ ] Keep immutable appearance/seed data single-buffered.
-- [ ] Generate deterministic initial state with documented spatial and velocity distributions.
-- [ ] Add byte and total-memory estimates to capability UI before allocating.
-- [ ] Implement explicit state reset without rebuilding unrelated pipelines.
+- [x] Allocate two position buffers and two velocity buffers at maximum selected capacity.
+- [x] Keep immutable appearance/seed data single-buffered.
+- [x] Generate deterministic initial state with documented spatial and velocity distributions.
+- [x] Add byte and total-memory estimates to capability UI before allocating.
+- [x] Implement explicit state reset without rebuilding unrelated pipelines.
 
 ### Compute shader
 
-- [ ] Guard invocation index before every instance-state access.
-- [ ] Clamp `deltaTime` to prevent explosive resume frames.
-- [ ] Apply acceleration and speed limits without normalizing zero-length vectors.
-- [ ] Detect invalid/non-finite-like states through safe comparisons and re-seed them deterministically; WGSL behavior and limitations are documented.
-- [ ] Keep numerical constants in a uniform/config block rather than scattered magic values.
-- [ ] Confirm source and destination buffers never alias in one compute dispatch.
+- [x] Guard invocation index before every instance-state access.
+- [x] Clamp `deltaTime` to prevent explosive resume frames.
+- [x] Apply acceleration and speed limits without normalizing zero-length vectors.
+- [x] Detect invalid/non-finite-like states through safe comparisons and re-seed them deterministically; WGSL behavior and limitations are documented.
+- [x] Keep numerical constants in a uniform/config block rather than scattered magic values.
+- [x] Confirm source and destination buffers never alias in one compute dispatch.
 
 ### Interaction
 
-- [ ] Convert pointer coordinates into a stable world-space attractor using a documented plane or ray intersection.
-- [ ] Update interaction state through the global uniform only.
-- [ ] Support attract, repel, disabled, and strength/radius controls.
-- [ ] Ensure pointer leave, capture loss, and touch input cannot leave an unbounded force active.
+- [x] Convert pointer coordinates into a stable world-space attractor using a documented plane or ray intersection.
+- [x] Update interaction state through the global uniform only.
+- [x] Support attract, repel, disabled, and strength/radius controls.
+- [x] Ensure pointer leave, capture loss, and touch input cannot leave an unbounded force active.
 
 ### Frame integration
 
-- [ ] Encode compute before render in the same command encoder unless measurement supports another organization.
-- [ ] Swap prebuilt compute/render bind groups by frame parity.
-- [ ] Skip or freeze simulation during pause without accumulating elapsed time.
-- [ ] Support fixed-timestep benchmark mode and clamped variable timestep interactive mode.
-- [ ] Preserve zero per-instance CPU work and zero per-frame GPU readback.
+- [x] Encode compute before render in the same command encoder unless measurement supports another organization.
+- [x] Swap prebuilt compute/render bind groups by frame parity.
+- [x] Skip or freeze simulation during pause without accumulating elapsed time.
+- [x] Support fixed-timestep benchmark mode and clamped variable timestep interactive mode.
+- [x] Preserve zero per-instance CPU work and zero per-frame GPU readback.
 
 ## Correctness strategy
 

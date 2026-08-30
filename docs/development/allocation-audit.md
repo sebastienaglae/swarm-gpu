@@ -36,3 +36,11 @@ The steady-state source audit at 10k and 100k found no application-owned `new`, 
 - Resizing alone recreates the depth texture and view. Population switching changes only the direct instance count.
 
 The retained Phase 02 evidence records source inspection and benchmark behavior rather than a raw DevTools allocation profile, which stays local under the evidence policy. A release-grade allocation timeline remains a Phase 06 observability task.
+
+## Phase 03 simulation audit
+
+- `App.#onFrame` mutates one persistent `SimulationFrame` object and preallocated camera/attractor arrays.
+- Both compute bind groups and both render bind groups are immutable after initialization; parity selects array entries without rebuilding resources.
+- The simulation dispatch, render pass, and submission share one command encoder. No instance loop, mapped buffer, promise, descriptor construction, or debug counter readback occurs in the interactive path.
+- Reset performs bounded chunk uploads of retained initial arrays only on explicit user action; it does not rebuild pipelines, layouts, or bind groups.
+- Fixture capture and timestamp resolution are explicit paused-development operations and are excluded from interactive allocation/readback claims.

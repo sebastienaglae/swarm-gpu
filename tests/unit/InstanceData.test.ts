@@ -3,6 +3,7 @@ import {
   createStaticInstanceData,
   POSITION_FLOATS_PER_INSTANCE,
 } from '../../src/renderer/InstanceData';
+import { estimateSimulationStateBytes } from '../../src/renderer/StaticSwarmRenderer';
 
 describe('static instance generation', () => {
   it('is deterministic for a given seed and changes for another seed', () => {
@@ -33,5 +34,10 @@ describe('static instance generation', () => {
   it('rejects invalid population sizes', () => {
     expect(() => createStaticInstanceData(-1)).toThrow(RangeError);
     expect(() => createStaticInstanceData(1.5)).toThrow(RangeError);
+  });
+
+  it('estimates two mutable copies plus one immutable appearance buffer', () => {
+    expect(estimateSimulationStateBytes(500_000)).toBe(40_000_000);
+    expect(() => estimateSimulationStateBytes(-1)).toThrow(RangeError);
   });
 });

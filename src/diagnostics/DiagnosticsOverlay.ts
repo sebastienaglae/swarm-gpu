@@ -74,6 +74,12 @@ export class DiagnosticsOverlay {
     this.setPopulation(instanceCount, renderer.triangleCount);
   }
 
+  public setPendingSimulationEstimate(capacity: number, estimatedBytes: number): void {
+    this.#instances.value = `${capacity.toLocaleString('en-US')} capacity`;
+    this.#memory.value = `${(estimatedBytes / 1_048_576).toFixed(1)} MiB planned`;
+    this.#dispatches.value = 'pipeline pending';
+  }
+
   public setPopulation(instanceCount: number, trianglesPerInstance: number): void {
     this.#instances.value = instanceCount.toLocaleString('en-US');
     this.#triangles.value = (instanceCount * trianglesPerInstance).toLocaleString('en-US');

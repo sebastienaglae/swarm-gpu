@@ -36,6 +36,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     let lastTextureSize = '';
     let textureDestroyCount = 0;
     let computeDispatchCount = 0;
+    let lastAttractorStrength = 0;
     const noop = () => {
       return;
     };
@@ -56,14 +57,26 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
           submit: () => {
             submitCount += 1;
           },
-          writeBuffer: noop,
+          writeBuffer: (
+            target: { label?: string },
+            _bufferOffset: number,
+            data: ArrayBuffer,
+            dataOffset = 0,
+          ) => {
+            if (target.label === 'Global uniforms') {
+              lastAttractorStrength = new Float32Array(data, dataOffset)[59] ?? 0;
+            }
+          },
         },
         lost,
         addEventListener: noop,
         removeEventListener: noop,
         pushErrorScope: noop,
         popErrorScope: async () => null,
-        createBuffer: () => ({ destroy: noop }),
+        createBuffer: (descriptor: { label?: string }) => ({
+          label: descriptor.label,
+          destroy: noop,
+        }),
         createTexture: (descriptor: { size: [number, number, number] }) => {
           lastTextureSize = `${String(descriptor.size[0])}x${String(descriptor.size[1])}`;
           return {
@@ -195,6 +208,10 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       configurable: true,
       get: () => computeDispatchCount,
     });
+    Object.defineProperty(globalThis, '__MOCK_ATTRACTOR_STRENGTH__', {
+      configurable: true,
+      get: () => lastAttractorStrength,
+    });
   });
   await page.goto('/');
 
@@ -213,6 +230,18 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_COMPUTE_DISPATCH_COUNT__')))
     .toBeGreaterThan(0);
+  await page.mouse.move(450, 300);
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
+    .toBeGreaterThan(0);
+  await page.locator('#interaction-mode').selectOption('repel');
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
+    .toBeLessThan(0);
+  await page.locator('#gpu-canvas').dispatchEvent('pointerleave');
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_ATTRACTOR_STRENGTH__')))
+    .toBe(0);
   await page.setViewportSize({ width: 900, height: 600 });
   await expect(page.locator('#metric-canvas')).toHaveText('900 × 600');
   await expect
@@ -233,7 +262,6 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   expect(await page.evaluate(() => Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__'))).toBe(
     pausedSubmitCount,
   );
-  await page.locator('#interaction-mode').selectOption('repel');
   await page.locator('#interaction-strength').fill('30');
   await page.locator('#interaction-radius').fill('40');
   await page.locator('#pause-button').click();

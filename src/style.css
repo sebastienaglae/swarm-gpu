@@ -148,7 +148,16 @@ button:focus-visible {
   right: 1rem;
   bottom: 1rem;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.45rem;
+  border: 1px solid rgb(148 163 184 / 16%);
+  border-radius: 0.7rem;
+  background: rgb(5 10 20 / 78%);
+  backdrop-filter: blur(12px);
 }
 
 .controls label {
@@ -157,6 +166,11 @@ button:focus-visible {
   gap: 0.55rem;
   color: #9db2c3;
   font-size: 0.78rem;
+}
+
+.controls input[type='range'] {
+  width: 7rem;
+  accent-color: #22d3ee;
 }
 
 [hidden] {

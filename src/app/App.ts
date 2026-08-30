@@ -10,6 +10,7 @@ import { OrbitCamera } from '../renderer/OrbitCamera';
 import { createStaticInstanceData } from '../renderer/InstanceData';
 import {
   STATIC_POPULATION_PRESETS,
+  estimateSimulationStateBytes,
   type SimulationFrame,
   StaticSwarmRenderer,
 } from '../renderer/StaticSwarmRenderer';
@@ -267,10 +268,17 @@ export class App {
         'Creating shaders, persistent buffers, bind groups, and render pipelines…',
         false,
       );
+      const rendererCapacity = Math.min(1_000_000, gpu.capabilities.capacity.maxInstances);
+      this.#diagnostics.setCapabilities(gpu.capabilities);
+      this.#diagnostics.setPendingSimulationEstimate(
+        rendererCapacity,
+        estimateSimulationStateBytes(rendererCapacity),
+      );
+      this.#diagnostics.show();
       const renderer = await StaticSwarmRenderer.create(
         gpu.device,
         gpu.canvasFormat,
-        gpu.capabilities.capacity.maxInstances,
+        rendererCapacity,
         this.#requestedWorkgroupSize,
       );
       if (generation !== this.#generation) {
@@ -282,7 +290,6 @@ export class App {
       this.#camera.setViewport(this.#canvasSize.width, this.#canvasSize.height);
       this.#camera.update();
       this.#configurePopulationPresets(renderer.capacity);
-      this.#diagnostics.setCapabilities(gpu.capabilities);
       this.#diagnostics.setRenderer(renderer, this.#instanceCount);
       this.#diagnostics.show();
       this.#controls.hidden = false;

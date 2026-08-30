@@ -36,6 +36,18 @@ export const COMPUTE_DISPATCHES = 1;
 
 const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
 
+export function estimateSimulationStateBytes(capacity: number): number {
+  if (!Number.isSafeInteger(capacity) || capacity < 0) {
+    throw new RangeError('Simulation capacity must be a safe non-negative integer');
+  }
+  return (
+    capacity *
+    (POSITION_BYTES_PER_INSTANCE * 2 +
+      VELOCITY_BYTES_PER_INSTANCE * 2 +
+      APPEARANCE_BYTES_PER_INSTANCE)
+  );
+}
+
 export interface SimulationFrame extends SimulationUniformValues {
   readonly timeSeconds: number;
 }
@@ -136,11 +148,7 @@ export class StaticSwarmRenderer {
   ) {
     this.#device = device;
     this.capacity = capacity;
-    this.estimatedStateBytes =
-      capacity *
-      (POSITION_BYTES_PER_INSTANCE * 2 +
-        VELOCITY_BYTES_PER_INSTANCE * 2 +
-        APPEARANCE_BYTES_PER_INSTANCE);
+    this.estimatedStateBytes = estimateSimulationStateBytes(capacity);
     this.#uniformBuffer = this.#resources.register(uniformBuffer, 'Global uniform buffer');
     this.#vertexBuffer = this.#resources.register(vertexBuffer, 'Drone vertex buffer');
     this.#indexBuffer = this.#resources.register(indexBuffer, 'Drone index buffer');

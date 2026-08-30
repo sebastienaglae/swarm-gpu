@@ -50,3 +50,9 @@ The conservative explicit allocation estimate for one million instances with dep
 ## Recalculation rules
 
 Update this worksheet and ADR 0002 when element strides, ping-pong ownership, LOD capacity, render targets, timing rings, or mesh formats change. A population cap change must include the updated arithmetic and runtime limit capture.
+
+## Phase 03 realized allocation
+
+Simulation allocates the two position copies, two velocity copies, and one appearance buffer: 80 bytes per selected capacity instance. Visible-ID storage remains planned for Phase 04 and is not yet allocated. Consequently the renderer reports 76.3 MiB of state at the one-million capacity and 38.1 MiB for 500k; depth and small fixed resources are reported separately by benchmark estimates.
+
+The application shows this planned state allocation alongside adapter capacity before creating the simulation buffers. Runtime allocation is capped at one million even when the Phase 01 planning formula reports a higher future capacity.
