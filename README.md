@@ -49,6 +49,12 @@ GPU simulation -> frustum culling -> LOD classification
 5. Architectural changes update the affected phase document before or in the same pull request as the code.
 6. Optional work must not delay phases 00–08. Phase 09 is explicitly outside the v1 critical path.
 
+Project governance and technical contracts:
+
+- [Contributing guide](CONTRIBUTING.md), [code of conduct](CODE_OF_CONDUCT.md), [security policy](SECURITY.md), and [MIT license](LICENSE).
+- [Architecture decisions](docs/architecture/decisions/README.md), [reference hardware](docs/reference-hardware.md), and [initial memory budget](docs/architecture/memory-budget.md).
+- [Benchmark evidence policy](docs/benchmarking/evidence-policy.md) and [versioned result schema](benchmarks/schemas/benchmark-result.schema.json).
+
 ## Planned repository layout
 
 ```text
@@ -71,4 +77,3 @@ docs/
 ## Definition of a trustworthy performance claim
 
 The headline target is not “one million objects” in isolation. A valid result reports a fixed scenario, warm-up period, sample duration, median and percentile frame times, CPU and GPU timing when supported, resolution, visible population, draw count, and whether the browser used native WebGPU. Results without that context are exploratory and must not be placed in the README headline.
-

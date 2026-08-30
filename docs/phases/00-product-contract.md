@@ -1,5 +1,9 @@
 # Phase 00 — Product contract
 
+- Status: Complete
+- Accepted: 2026-08-30
+- Owners: SwarmGPU maintainers
+
 ## Objective
 
 Turn the idea into a bounded engineering contract before implementation begins. This phase prevents feature drift and defines exactly what a public v1.0 must prove.
@@ -24,6 +28,15 @@ initialize once on CPU
   -> build indirect draw arguments on GPU
   -> draw on GPU
 ```
+
+## Accepted product decisions
+
+- Visual identity: a luminous low-poly space-drone swarm in a restrained dark-space scene. Near instances read as drones; mid and far representations prioritize motion and density.
+- Interaction set: orbit, zoom, pointer attract/repel, pause/resume, deterministic reset, supported population presets, quality/render scale, and explicit benchmark launch/export.
+- Public controls remain focused. LOD inspection, wireframe, buffer diagnostics, and fixed debug modes are development controls.
+- Raw WebGPU is the only renderer. Unsupported environments receive guidance rather than a reduced WebGL version.
+- Phase 09 research is outside the v1 critical path and cannot block Phases 01–08.
+- MIT is the project license. Contributions follow `CONTRIBUTING.md`, the Contributor Covenant, and the private security path in `SECURITY.md`.
 
 ## Explicit non-goals
 
@@ -105,14 +118,31 @@ Every committed benchmark scenario declares:
 
 ## Work checklist
 
-- [ ] Record the reference development machine and intended baseline browser.
-- [ ] Confirm the v1 interaction set and the visual identity “space drone swarm.”
-- [ ] Approve the non-goals and prevent Phase 09 work from entering the critical path.
-- [ ] Create an architecture decision record template.
-- [ ] Create issue and pull-request templates referencing phase checklist items.
-- [ ] Define licensing choice, contribution policy, code of conduct, and security reporting path.
-- [ ] Define the benchmark JSON schema and evidence directory naming convention.
-- [ ] Establish the initial memory budget for 10k through 1m populations.
+- [x] Record the reference development machine and intended baseline browser.
+- [x] Confirm the v1 interaction set and the visual identity “space drone swarm.”
+- [x] Approve the non-goals and prevent Phase 09 work from entering the critical path.
+- [x] Create an architecture decision record template.
+- [x] Create issue and pull-request templates referencing phase checklist items.
+- [x] Define licensing choice, contribution policy, code of conduct, and security reporting path.
+- [x] Define the benchmark JSON schema and evidence directory naming convention.
+- [x] Establish the initial memory budget for 10k through 1m populations.
+
+## Capability ownership
+
+Each v1 capability has one primary implementation phase. Later phases may test or document it but do not own a duplicate implementation.
+
+| Capability | Owning phase |
+|---|---|
+| Toolchain, CI, capability negotiation, unsupported UI, device lifecycle | Phase 01 |
+| Camera, mesh, depth, resize, static instancing, basic overlay | Phase 02 |
+| GPU motion, ping-pong state, deterministic reset, pointer attract/repel | Phase 03 |
+| Frustum culling, visible-ID compaction, indirect argument generation/draw | Phase 04 |
+| Three LOD representations, GPU classification, final visual language | Phase 05 |
+| GPU timing, benchmark runner, allocation audit, dynamic resolution, optimization | Phase 06 |
+| Input/bounds hardening, recovery qualification, automated stress matrix | Phase 07 |
+| Public README, media, hosted demo, release qualification and v1.0 tag | Phase 08 |
+
+Phase 09 owns post-v1 experiments only; it contains no required v1 capability.
 
 ## Exit criteria
 
@@ -122,10 +152,18 @@ Every committed benchmark scenario declares:
 
 ## Evidence to retain
 
-- Accepted ADRs for raw WebGPU and Structure of Arrays.
-- Filled reference-hardware record.
-- Initial memory-budget worksheet.
-- Project templates and governance files.
+- [ADR 0001: raw WebGPU](../architecture/decisions/0001-raw-webgpu.md).
+- [ADR 0002: Structure of Arrays](../architecture/decisions/0002-structure-of-arrays.md).
+- [Reference hardware record](../reference-hardware.md).
+- [Initial memory-budget worksheet](../architecture/memory-budget.md).
+- [Benchmark evidence policy](../benchmarking/evidence-policy.md) and [result schema](../../benchmarks/schemas/benchmark-result.schema.json).
+- Project templates under `.github/` and the root governance files.
+
+## Acceptance record
+
+The scope, non-goals, metrics, SoA direction, benchmark contract, visual identity, interaction set, ownership matrix, and public governance are accepted as the v1 contract on 2026-08-30. Changing any of those boundaries requires an ADR or an explicit update to this phase before implementation diverges.
+
+Runtime WebGPU adapter identity, features, and limits remain pending by design. They are enumerated in the reference-hardware record and must be captured in Phase 01. Until then they block performance marketing, not implementation.
 
 ## Risks and mitigations
 
@@ -135,4 +173,3 @@ Every committed benchmark scenario declares:
 | Browser implementations differ | Capture adapter capabilities and test stable Chrome/Edge plus another implementation when viable |
 | Metrics become UI decoration rather than evidence | Separate live approximate overlay from controlled benchmark reports |
 | Scope grows into a game engine | Reject work not required by the fixed pipeline or move it to Phase 09 |
-
