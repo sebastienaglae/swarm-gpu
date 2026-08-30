@@ -114,6 +114,7 @@ export class App {
       document.documentElement.dataset.appState = current;
     });
     this.#diagnostics.setState(this.state.current);
+    this.#status.retry.addEventListener('click', this.#onRetry);
   }
 
   public async initialize(): Promise<void> {
@@ -196,11 +197,17 @@ export class App {
     this.#input.reset();
   }
 
+  public simulateDeviceLossForDevelopment(): void {
+    if (!import.meta.env.DEV || this.state.current === 'disposed') return;
+    this.#gpu?.device.destroy();
+  }
+
   public dispose(): void {
     if (this.state.current === 'disposed') return;
     this.#generation += 1;
     this.#cancelFrame();
     this.#removeListeners();
+    this.#status.retry.removeEventListener('click', this.#onRetry);
     this.#destroyGpuResources();
     this.#diagnostics.hide();
     this.#controls.hidden = true;
@@ -212,7 +219,6 @@ export class App {
     this.#initializedListeners = true;
     this.#input.attach(this.#canvas);
     this.#resizeObserver.observe(this.#canvas);
-    this.#status.retry.addEventListener('click', this.#onRetry);
     this.#pauseButton.addEventListener('click', this.#onPauseToggle);
     this.#resetButton.addEventListener('click', this.#onReset);
     document.addEventListener('visibilitychange', this.#onVisibilityChange);
@@ -223,7 +229,6 @@ export class App {
     this.#initializedListeners = false;
     this.#input.detach(this.#canvas);
     this.#resizeObserver.disconnect();
-    this.#status.retry.removeEventListener('click', this.#onRetry);
     this.#pauseButton.removeEventListener('click', this.#onPauseToggle);
     this.#resetButton.removeEventListener('click', this.#onReset);
     document.removeEventListener('visibilitychange', this.#onVisibilityChange);
