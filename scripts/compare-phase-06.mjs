@@ -13,6 +13,8 @@ if (JSON.stringify(before.scenario) !== JSON.stringify(after.scenario))
 const metrics = [
   'frameIntervalMs',
   'cpuEncodeAndSubmitMs',
+  'cpuUpdateMs',
+  'submitCallMs',
   'gpuSimulationMs',
   'gpuClassificationMs',
   'gpuRenderMs',

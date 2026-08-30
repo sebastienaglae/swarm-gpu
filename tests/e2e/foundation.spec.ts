@@ -254,6 +254,8 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   await expect(page.locator('#metric-canvas')).not.toHaveText('0 × 0');
   await expect(page.locator('#metric-instances')).toHaveText('500,000');
   await expect(page.locator('#metric-dispatches')).toHaveText('3 @ 128 threads');
+  await expect(page.locator('#metric-gpu')).toContainText('delayed');
+  await expect(page.locator('#metric-lod')).toContainText('f)');
   await page.locator('#population-select').selectOption('100000');
   await expect(page.locator('#metric-instances')).toHaveText('100,000');
   await expect

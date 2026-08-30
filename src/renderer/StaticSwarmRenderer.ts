@@ -113,6 +113,7 @@ export class StaticSwarmRenderer {
   readonly #resources = new ResourceRegistry();
   readonly #uniformStaging = new Float32Array(GLOBAL_UNIFORM_FLOATS);
   readonly #cpuFrameSamples = new FrameSampleRecorder();
+  readonly #submitSamples = new FrameSampleRecorder();
   readonly #telemetry: GpuTelemetryRing | undefined;
   readonly #uniformBuffer: GPUBuffer;
   readonly #vertexBuffer: GPUBuffer;
@@ -737,6 +738,7 @@ export class StaticSwarmRenderer {
     const submitStart = performance.now();
     this.#device.queue.submit(this.#submission);
     this.lastSubmitMs = performance.now() - submitStart;
+    this.#submitSamples.record(this.lastSubmitMs);
     if (telemetrySlot !== undefined) this.#telemetry?.commit(telemetrySlot);
     this.#stateParity = destinationParity;
     this.lastCpuFrameMs = performance.now() - start;
@@ -1030,11 +1032,16 @@ export class StaticSwarmRenderer {
 
   public resetPerformanceSamples(): void {
     this.#cpuFrameSamples.reset();
+    this.#submitSamples.reset();
     this.#telemetry?.resetSamples();
   }
 
   public captureCpuFrameSamples(): number[] {
     return this.#cpuFrameSamples.snapshot();
+  }
+
+  public captureSubmitSamples(): number[] {
+    return this.#submitSamples.snapshot();
   }
 
   public captureGpuTelemetry(frameIndex: number): GpuTelemetrySnapshot | undefined {

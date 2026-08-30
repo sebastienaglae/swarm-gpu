@@ -9,7 +9,10 @@ const commit = process.argv[3];
 const suite = process.argv[4] ?? 'smoke';
 if (!commit || !/^[0-9a-f]{7,40}$/.test(commit)) throw new Error('Pass a clean source commit');
 if (!['smoke', 'full'].includes(suite)) throw new Error('Suite must be smoke or full');
-const scenarios = JSON.parse(await readFile(`benchmarks/scenarios/phase-06-${suite}.json`, 'utf8'));
+const scenarioFilter = process.argv[5];
+const scenarios = JSON.parse(
+  await readFile(`benchmarks/scenarios/phase-06-${suite}.json`, 'utf8'),
+).filter((scenario) => scenarioFilter === undefined || scenario.id === scenarioFilter);
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 
 for (const scenario of scenarios) {
@@ -70,6 +73,8 @@ for (const scenario of scenarios) {
   if (errors.length > 0) throw new Error(`${scenario.id}: ${errors.join('\n')}`);
   const frameInterval = reportSnapshot.metrics.frameIntervalMs;
   const cpu = reportSnapshot.metrics.cpuEncodeAndSubmitMs;
+  const cpuUpdate = reportSnapshot.metrics.cpuUpdateMs;
+  const submitCall = reportSnapshot.metrics.submitCallMs;
   const gpu = reportSnapshot.metrics.gpu;
   const report = {
     schemaVersion: '1.0.0',
@@ -93,6 +98,8 @@ for (const scenario of scenarios) {
     samples: {
       frameIntervalMs: frameInterval,
       cpuEncodeAndSubmitMs: cpu,
+      cpuUpdateMs: cpuUpdate,
+      submitCallMs: submitCall,
       gpuSimulationMs: gpu?.simulationMs ?? [],
       gpuClassificationMs: gpu?.cullingMs ?? [],
       gpuRenderMs: gpu?.renderMs ?? [],
@@ -102,6 +109,8 @@ for (const scenario of scenarios) {
       status: 'supported',
       frameIntervalMs: summarize(frameInterval),
       cpuEncodeAndSubmitMs: summarize(cpu),
+      cpuUpdateMs: summarize(cpuUpdate),
+      submitCallMs: summarize(submitCall),
       gpuSimulationMs: summarizeOptional(gpu?.simulationMs),
       gpuClassificationMs: summarizeOptional(gpu?.cullingMs),
       gpuRenderMs: summarizeOptional(gpu?.renderMs),

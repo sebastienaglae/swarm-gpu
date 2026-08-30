@@ -111,6 +111,7 @@ export class App {
     backgroundEnabled: 1,
   };
   readonly #frameIntervalSamples = new FrameSampleRecorder();
+  readonly #cpuUpdateSamples = new FrameSampleRecorder();
   readonly #dynamicResolution = new DynamicResolutionController();
   readonly #resizeObserver: ResizeObserver;
   #gpu: GpuContext | undefined;
@@ -177,6 +178,7 @@ export class App {
       );
       this.#simulationFrame.attractorRadius = Number(this.#interactionRadius.value);
       this.#lastCpuUpdateMs = performance.now() - updateStart;
+      this.#cpuUpdateSamples.record(this.#lastCpuUpdateMs);
       renderer.render(
         gpu.canvasContext,
         this.#camera,
@@ -485,6 +487,7 @@ export class App {
 
   public resetPerformanceSamples(): void {
     this.#frameIntervalSamples.reset();
+    this.#cpuUpdateSamples.reset();
     this.#renderer?.resetPerformanceSamples();
   }
 
@@ -543,10 +546,12 @@ export class App {
           ? null
           : {
               cpuEncodeAndSubmitMs: renderer.captureCpuFrameSamples(),
+              cpuUpdateMs: this.#cpuUpdateSamples.snapshot(),
+              submitCallMs: renderer.captureSubmitSamples(),
               frameIntervalMs: this.#frameIntervalSamples.snapshot(),
               gpu: renderer.captureGpuTelemetrySamples() ?? null,
               latestGpu: renderer.captureGpuTelemetry(this.#simulationFrame.frameIndex) ?? null,
-              submitCallMs: renderer.lastSubmitMs,
+              latestSubmitCallMs: renderer.lastSubmitMs,
               estimatedStateBytes: renderer.estimatedStateBytes,
               drawCalls: renderer.drawCalls,
               computeDispatches: renderer.computeDispatches,
