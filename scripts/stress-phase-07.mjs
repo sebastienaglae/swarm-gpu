@@ -181,7 +181,14 @@ async function runScenario(scenario) {
     } else if (scenario.kind === 'quality') {
       const values = ['-1', '0', '1', '2'];
       for (let index = 0; index < scenario.repetitions; index += 1) {
-        await page.locator('#lod-mode').selectOption(values[index % values.length]);
+        await page.locator('#lod-mode').evaluate(
+          (element, value) => {
+            const select = element;
+            select.value = value;
+            select.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+          },
+          values[index % values.length],
+        );
         completed = index + 1;
       }
     } else if (scenario.kind === 'rebuild') {
