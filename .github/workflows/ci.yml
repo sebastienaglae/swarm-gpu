@@ -26,6 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run benchmark:budgets
+      - run: npm run stress:reports
 
   browser-smoke:
     runs-on: ubuntu-latest

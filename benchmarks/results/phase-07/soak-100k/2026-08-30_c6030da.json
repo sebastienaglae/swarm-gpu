@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "scenarioVersion": "1.0.0",
+    "id": "SOAK-100K",
+    "kind": "soak",
+    "population": 100000,
+    "durationSeconds": 600,
+    "repetitions": 0,
+    "timeoutSeconds": 660
+  },
+  "source": {
+    "commit": "c6030da",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T18:08:28.426Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+    "adapter": "nvidia turing",
+    "timestampQuery": true
+  },
+  "status": "passed",
+  "progress": {
+    "completed": 600,
+    "expected": 600,
+    "elapsedSeconds": 607.207
+  },
+  "validationEvents": [],
+  "timingDrift": {
+    "firstThirdMedianMs": 16.700000762939453,
+    "lastThirdMedianMs": 16.700000762939453,
+    "ratio": 1,
+    "note": "Browser process memory is approximate and is not used alone as leak evidence."
+  },
+  "resources": {
+    "before": {
+      "created": 12,
+      "destroyed": 0,
+      "active": 12
+    },
+    "after": {
+      "created": 12,
+      "destroyed": 0,
+      "active": 12
+    },
+    "maximumEstimatedStateBytes": 92000108,
+    "loop": {
+      "active": 1,
+      "peakActive": 1,
+      "scheduled": 36326,
+      "cancelled": 0,
+      "executed": 36325
+    }
+  },
+  "error": null,
+  "screenshot": null
+}

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "scenarioVersion": "1.0.0",
+    "id": "QUALITY-500",
+    "kind": "quality",
+    "population": 500000,
+    "durationSeconds": 0,
+    "repetitions": 500,
+    "timeoutSeconds": 120
+  },
+  "source": {
+    "commit": "c6030da",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T18:21:00.202Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+    "adapter": "nvidia turing",
+    "timestampQuery": true
+  },
+  "status": "passed",
+  "progress": {
+    "completed": 500,
+    "expected": 500,
+    "elapsedSeconds": 4.684
+  },
+  "validationEvents": [],
+  "timingDrift": {
+    "firstThirdMedianMs": 16.700000762939453,
+    "lastThirdMedianMs": 16.700000762939453,
+    "ratio": 1,
+    "note": "Browser process memory is approximate and is not used alone as leak evidence."
+  },
+  "resources": {
+    "before": {
+      "created": 12,
+      "destroyed": 0,
+      "active": 12
+    },
+    "after": {
+      "created": 12,
+      "destroyed": 0,
+      "active": 12
+    },
+    "maximumEstimatedStateBytes": 92000108,
+    "loop": {
+      "active": 1,
+      "peakActive": 1,
+      "scheduled": 230,
+      "cancelled": 0,
+      "executed": 229
+    }
+  },
+  "error": null,
+  "screenshot": null
+}

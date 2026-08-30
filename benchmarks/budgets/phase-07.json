@@ -1,0 +1,19 @@
+{
+  "contractVersion": "1.0.0",
+  "referenceCommit": "c6030da",
+  "requiredScenarios": [
+    "SOAK-10K",
+    "SOAK-100K",
+    "SOAK-500K",
+    "SOAK-1M",
+    "RESIZE-1000",
+    "PAUSE-RESUME-500",
+    "QUALITY-500",
+    "REBUILD-100",
+    "VISIBILITY-100",
+    "RECOVERY-25",
+    "CAPACITY-BOUNDARIES"
+  ],
+  "maximumSoakTimingDriftRatio": 1.15,
+  "maximumActiveLoops": 1
+}

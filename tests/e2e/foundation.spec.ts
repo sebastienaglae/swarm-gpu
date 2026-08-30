@@ -35,6 +35,10 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     let lastInstanceCount = 0;
     let lastTextureSize = '';
     let textureDestroyCount = 0;
+    let bufferCreateCount = 0;
+    let bufferDestroyCount = 0;
+    let queryCreateCount = 0;
+    let queryDestroyCount = 0;
     let computeDispatchCount = 0;
     let indirectDrawCount = 0;
     let lastAttractorStrength = 0;
@@ -77,8 +81,10 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         pushErrorScope: noop,
         popErrorScope: async () => null,
         createBuffer: (descriptor: { label?: string; size: number }) => {
+          bufferCreateCount += 1;
           const storage = new ArrayBuffer(descriptor.size);
           let mapped = false;
+          let bufferDestroyed = false;
           return {
             label: descriptor.label,
             get mapState() {
@@ -91,10 +97,24 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
             unmap: () => {
               mapped = false;
             },
-            destroy: noop,
+            destroy: () => {
+              if (bufferDestroyed) return;
+              bufferDestroyed = true;
+              bufferDestroyCount += 1;
+            },
           };
         },
-        createQuerySet: () => ({ destroy: noop }),
+        createQuerySet: () => {
+          queryCreateCount += 1;
+          let queryDestroyed = false;
+          return {
+            destroy: () => {
+              if (queryDestroyed) return;
+              queryDestroyed = true;
+              queryDestroyCount += 1;
+            },
+          };
+        },
         createTexture: (descriptor: { size: [number, number, number] }) => {
           lastTextureSize = `${String(descriptor.size[0])}x${String(descriptor.size[1])}`;
           return {
@@ -234,6 +254,14 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       configurable: true,
       get: () => textureDestroyCount,
     });
+    Object.defineProperty(globalThis, '__MOCK_BUFFER_COUNTS__', {
+      configurable: true,
+      get: () => ({ created: bufferCreateCount, destroyed: bufferDestroyCount }),
+    });
+    Object.defineProperty(globalThis, '__MOCK_QUERY_COUNTS__', {
+      configurable: true,
+      get: () => ({ created: queryCreateCount, destroyed: queryDestroyCount }),
+    });
     Object.defineProperty(globalThis, '__MOCK_COMPUTE_DISPATCH_COUNT__', {
       configurable: true,
       get: () => computeDispatchCount,
@@ -364,6 +392,14 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
   expect(lifecycle.after.loop.active).toBe(1);
   expect(lifecycle.after.canvasConnected).toBe(true);
   expect(lifecycle.after.lastDeltaSeconds).toBeLessThanOrEqual(1 / 30);
+  const ownedGpuResources = await page.evaluate(() => ({
+    buffers: Reflect.get(globalThis, '__MOCK_BUFFER_COUNTS__'),
+    queries: Reflect.get(globalThis, '__MOCK_QUERY_COUNTS__'),
+  }));
+  expect(ownedGpuResources.buffers.destroyed).toBeGreaterThan(0);
+  expect(ownedGpuResources.queries.destroyed).toBeGreaterThan(0);
+  expect(ownedGpuResources.buffers.created - ownedGpuResources.buffers.destroyed).toBe(20);
+  expect(ownedGpuResources.queries.created - ownedGpuResources.queries.destroyed).toBe(3);
 
   await page.evaluate(() => {
     Reflect.get(globalThis, '__SWARM_GPU_APP__').simulateDeviceLossForDevelopment();

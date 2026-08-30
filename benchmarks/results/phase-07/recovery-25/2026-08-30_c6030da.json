@@ -1,0 +1,210 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "scenarioVersion": "1.0.0",
+    "id": "RECOVERY-25",
+    "kind": "recovery",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 25,
+    "timeoutSeconds": 900,
+    "screenshot": true
+  },
+  "source": {
+    "commit": "c6030da",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T18:21:46.396Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+    "adapter": "nvidia turing",
+    "timestampQuery": true
+  },
+  "status": "passed",
+  "progress": {
+    "completed": 25,
+    "expected": 25,
+    "elapsedSeconds": 10.953
+  },
+  "validationEvents": [
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:36.352Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:36.761Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:37.144Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:37.561Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:38.014Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:38.446Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:38.861Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:39.230Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:39.627Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:39.994Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:40.395Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:40.812Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:41.213Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:41.630Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:42.031Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:42.428Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:42.844Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:43.245Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:43.662Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:44.045Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:44.445Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:44.817Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:45.212Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:45.596Z"
+    },
+    {
+      "category": "device-loss",
+      "message": "destroyed: Device was destroyed.",
+      "state": "running",
+      "timestamp": "2026-08-30T18:21:46.012Z"
+    }
+  ],
+  "timingDrift": {
+    "firstThirdMedianMs": 400,
+    "lastThirdMedianMs": 384,
+    "ratio": 0.96,
+    "note": "Browser process memory is approximate and is not used alone as leak evidence."
+  },
+  "resources": {
+    "before": {
+      "created": 12,
+      "destroyed": 0,
+      "active": 12
+    },
+    "after": {
+      "created": 312,
+      "destroyed": 300,
+      "active": 12
+    },
+    "maximumEstimatedStateBytes": 92000108,
+    "loop": {
+      "active": 1,
+      "peakActive": 1,
+      "scheduled": 58,
+      "cancelled": 25,
+      "executed": 32
+    }
+  },
+  "error": null,
+  "screenshot": null
+}

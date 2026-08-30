@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "scenarioVersion": "1.0.0",
+    "id": "REBUILD-100",
+    "kind": "rebuild",
+    "population": 100000,
+    "durationSeconds": 0,
+    "repetitions": 100,
+    "timeoutSeconds": 1800
+  },
+  "source": {
+    "commit": "c6030da",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T18:21:33.929Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+    "adapter": "nvidia turing",
+    "timestampQuery": true
+  },
+  "status": "passed",
+  "progress": {
+    "completed": 100,
+    "expected": 100,
+    "elapsedSeconds": 33.474
+  },
+  "validationEvents": [],
+  "timingDrift": {
+    "firstThirdMedianMs": 0.18199999630451202,
+    "lastThirdMedianMs": 0,
+    "ratio": 0,
+    "note": "Browser process memory is approximate and is not used alone as leak evidence."
+  },
+  "resources": {
+    "before": {
+      "created": 12,
+      "destroyed": 0,
+      "active": 12
+    },
+    "after": {
+      "created": 1212,
+      "destroyed": 1200,
+      "active": 12
+    },
+    "maximumEstimatedStateBytes": 92000108,
+    "loop": {
+      "active": 1,
+      "peakActive": 1,
+      "scheduled": 175,
+      "cancelled": 100,
+      "executed": 74
+    }
+  },
+  "error": null,
+  "screenshot": null
+}
