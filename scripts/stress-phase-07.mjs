@@ -212,6 +212,7 @@ async function runScenario(scenario) {
         await page.evaluate(() =>
           Reflect.get(globalThis, '__SWARM_GPU_APP__').simulateDeviceLossForDevelopment(),
         );
+        await page.waitForFunction(() => document.documentElement.dataset.appState !== 'running');
         await page.waitForFunction(() =>
           ['running', 'failed'].includes(document.documentElement.dataset.appState ?? ''),
         );
