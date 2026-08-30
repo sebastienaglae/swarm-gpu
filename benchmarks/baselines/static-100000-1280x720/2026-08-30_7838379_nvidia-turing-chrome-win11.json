@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0.0",
+  "scenario": {
+    "id": "STATIC-100000-1280X720",
+    "version": 1,
+    "seed": 1511508451,
+    "instanceCount": 100000,
+    "cameraPath": "fixed-default-orbit-camera",
+    "fixedTimestepSeconds": 0.016666666666666666,
+    "canvasWidth": 1280,
+    "canvasHeight": 720,
+    "renderScale": 1,
+    "lodThresholds": [0, 0],
+    "notes": "Static Phase 02 direct-instancing baseline; LOD is intentionally disabled."
+  },
+  "source": {
+    "commit": "7838379",
+    "dirty": false
+  },
+  "environment": {
+    "recordedAt": "2026-08-30T13:33:10.756Z",
+    "os": "Windows 10.0.26200",
+    "browser": "Google Chrome 151.0.7922.174 (Playwright channel chrome, headless)",
+    "powerPreference": "high-performance",
+    "powerNotes": "Browser request used high-performance; Chrome reports this hint is ignored on Windows.",
+    "thermalNotes": "Sequential local run; thermal state was not instrumented."
+  },
+  "adapter": {
+    "description": "nvidia turing",
+    "driver": "Not exposed by WebGPU adapter metadata",
+    "features": ["timestamp-query"],
+    "limits": {}
+  },
+  "measurement": {
+    "warmupSeconds": 5,
+    "sampleSeconds": 20,
+    "sampleCount": 1201,
+    "longFrameThresholdMs": 33.33,
+    "excludedSamples": 0
+  },
+  "results": {
+    "frameIntervalMs": {
+      "median": 16.7,
+      "p95": 16.8,
+      "p99": 17
+    },
+    "cpuFrameMs": {
+      "median": 0.2,
+      "p95": 0.5,
+      "p99": 1
+    },
+    "gpuFrameMs": null,
+    "gpuTimingUnavailableReason": "Timestamp instrumentation is deferred to Phase 06.",
+    "longFrameCount": 0,
+    "drawCalls": 2,
+    "readbacksPerMeasuredFrame": 0,
+    "visibleCountAfterMeasurement": 100000,
+    "estimatedExplicitGpuBytes": 6886920,
+    "notes": "Includes one background draw and one indexed swarm draw. CPU timing covers encode and submit."
+  }
+}

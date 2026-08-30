@@ -33,6 +33,8 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     let submitCount = 0;
     let deviceRequestCount = 0;
     let lastInstanceCount = 0;
+    let lastTextureSize = '';
+    let textureDestroyCount = 0;
     const noop = () => {
       return;
     };
@@ -56,7 +58,15 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
         pushErrorScope: noop,
         popErrorScope: async () => null,
         createBuffer: () => ({ destroy: noop }),
-        createTexture: () => ({ createView: () => ({}), destroy: noop }),
+        createTexture: (descriptor: { size: [number, number, number] }) => {
+          lastTextureSize = `${String(descriptor.size[0])}x${String(descriptor.size[1])}`;
+          return {
+            createView: () => ({}),
+            destroy: () => {
+              textureDestroyCount += 1;
+            },
+          };
+        },
         createBindGroupLayout: () => ({}),
         createPipelineLayout: () => ({}),
         createBindGroup: () => ({}),
@@ -150,6 +160,14 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
       configurable: true,
       get: () => lastInstanceCount,
     });
+    Object.defineProperty(globalThis, '__MOCK_LAST_TEXTURE_SIZE__', {
+      configurable: true,
+      get: () => lastTextureSize,
+    });
+    Object.defineProperty(globalThis, '__MOCK_TEXTURE_DESTROY_COUNT__', {
+      configurable: true,
+      get: () => textureDestroyCount,
+    });
   });
   await page.goto('/');
 
@@ -166,6 +184,12 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     .toBe(10_000);
   await page.setViewportSize({ width: 900, height: 600 });
   await expect(page.locator('#metric-canvas')).toHaveText('900 × 600');
+  await expect
+    .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_LAST_TEXTURE_SIZE__')))
+    .toBe('900x600');
+  expect(
+    await page.evaluate(() => Reflect.get(globalThis, '__MOCK_TEXTURE_DESTROY_COUNT__')),
+  ).toBeGreaterThan(0);
   await expect
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_SUBMIT_COUNT__')))
     .toBeGreaterThan(0);

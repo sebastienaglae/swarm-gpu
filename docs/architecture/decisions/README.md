@@ -11,10 +11,11 @@ Architecture decision records (ADRs) capture decisions that affect SwarmGPU's sc
 
 ## Index
 
-| ADR                                 | Status   | Decision                                              |
-| ----------------------------------- | -------- | ----------------------------------------------------- |
-| [0001](0001-raw-webgpu.md)          | Accepted | Use raw WebGPU as the only rendering API              |
-| [0002](0002-structure-of-arrays.md) | Accepted | Start with Structure of Arrays for GPU instance state |
+| ADR                                   | Status   | Decision                                              |
+| ------------------------------------- | -------- | ----------------------------------------------------- |
+| [0001](0001-raw-webgpu.md)            | Accepted | Use raw WebGPU as the only rendering API              |
+| [0002](0002-structure-of-arrays.md)   | Accepted | Start with Structure of Arrays for GPU instance state |
+| [0003](0003-rendering-conventions.md) | Accepted | Freeze camera, clip-space, and depth conventions      |
 
 ## Process
 

@@ -30,36 +30,36 @@ Build a correct static renderer with one mesh, persistent instance data, orbit c
 
 ### Geometry and layout
 
-- [ ] Define a compact indexed vertex format and document stride/offsets.
-- [ ] Create near-LOD mesh data procedurally or add licensed source asset plus attribution.
-- [ ] Calculate and document object-space bounding radius used by later culling.
-- [ ] Define WGSL structs and matching TypeScript byte layouts with alignment tests.
-- [ ] Initialize deterministic positions, scale, color, and heading using a seeded PRNG outside the frame loop.
-- [ ] Upload initial population in bounded chunks if one large upload risks implementation limits.
+- [x] Define a compact indexed vertex format and document stride/offsets.
+- [x] Create near-LOD mesh data procedurally or add licensed source asset plus attribution.
+- [x] Calculate and document object-space bounding radius used by later culling.
+- [x] Define WGSL structs and matching TypeScript byte layouts with alignment tests.
+- [x] Initialize deterministic positions, scale, color, and heading using a seeded PRNG outside the frame loop.
+- [x] Upload initial population in bounded chunks if one large upload risks implementation limits.
 
 ### Camera and globals
 
-- [ ] Implement orbit yaw/pitch/distance using preallocated arrays.
-- [ ] Clamp pitch and distance and handle lost pointer capture.
-- [ ] Update view, projection, view-projection, camera position, time, viewport, and instance count in one aligned global-uniform block.
-- [ ] Write only the used global bytes per frame.
-- [ ] Unit-test known camera transforms and frustum-plane extraction fixtures.
+- [x] Implement orbit yaw/pitch/distance using preallocated arrays.
+- [x] Clamp pitch and distance and handle lost pointer capture.
+- [x] Update view, projection, view-projection, camera position, time, viewport, and instance count in one aligned global-uniform block.
+- [x] Write only the used global bytes per frame.
+- [x] Unit-test known camera transforms and frustum-plane extraction fixtures.
 
 ### Pipeline and render loop
 
-- [ ] Create shader modules, bind group layouts, pipeline layout, render pipeline, bind groups, depth texture, and render bundle candidates before animation starts.
-- [ ] Await asynchronous pipeline creation and reflect progress in loading UI.
-- [ ] Encode one render pass and one indexed instanced draw for the swarm.
-- [ ] Keep command encoding local and allocation-conscious; cache stable descriptors where safe.
-- [ ] Recreate only size-dependent attachments during resize.
-- [ ] Preserve correct behavior at zero canvas area and across pause/resume.
+- [x] Create shader modules, bind group layouts, pipeline layout, render pipeline, bind groups, depth texture, and render bundle candidates before animation starts.
+- [x] Await asynchronous pipeline creation and reflect progress in loading UI.
+- [x] Encode one render pass and one indexed instanced draw for the swarm.
+- [x] Keep command encoding local and allocation-conscious; cache stable descriptors where safe.
+- [x] Recreate only size-dependent attachments during resize.
+- [x] Preserve correct behavior at zero canvas area and across pause/resume.
 
 ### Diagnostics
 
-- [ ] Implement an overlay update cadence independent from per-frame string creation where practical (for example 4 Hz).
-- [ ] Track JS frame interval and CPU encode/submit duration separately.
-- [ ] Show whether timing is approximate and whether GPU timestamp queries are unavailable.
-- [ ] Count swarm and auxiliary draw calls from renderer configuration rather than driver introspection.
+- [x] Implement an overlay update cadence independent from per-frame string creation where practical (for example 4 Hz).
+- [x] Track JS frame interval and CPU encode/submit duration separately.
+- [x] Show whether timing is approximate and whether GPU timestamp queries are unavailable.
+- [x] Count swarm and auxiliary draw calls from renderer configuration rather than driver introspection.
 
 ## Validation plan
 

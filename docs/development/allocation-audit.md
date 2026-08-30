@@ -24,3 +24,15 @@ DevTools changes timing and allocation behavior, so this procedure diagnoses own
 - The WebGPU API still returns a current texture view, command encoder, render pass encoder, and command buffer each frame.
 - Diagnostics update only when state, capability, or size changes in this phase.
 - Shader source will be imported as static WGSL modules; runtime shader-string assembly is prohibited.
+
+## Phase 02 static renderer audit
+
+The steady-state source audit at 10k and 100k found no application-owned `new`, array literal, object literal, closure creation, shader construction, bind-group creation, pipeline creation, buffer creation, or texture creation in `App.#onFrame` or `StaticSwarmRenderer.render`.
+
+- Camera matrices, input deltas, uniform staging, attachments, pass descriptors, texture-view descriptor, encoder descriptor, command-buffer descriptor, and submission array are persistent.
+- Each frame writes 224 uniform bytes, encodes one pass, submits two configured draws, and records numeric timing into preallocated 4096-entry rings.
+- Diagnostics format strings and update DOM text at 4 Hz, outside the measured renderer timing. Benchmark snapshots allocate only after the measurement window.
+- Browser-owned current texture views, command encoders, render-pass encoders, and command buffers remain unavoidable wrapper objects.
+- Resizing alone recreates the depth texture and view. Population switching changes only the direct instance count.
+
+The retained Phase 02 evidence records source inspection and benchmark behavior rather than a raw DevTools allocation profile, which stays local under the evidence policy. A release-grade allocation timeline remains a Phase 06 observability task.
