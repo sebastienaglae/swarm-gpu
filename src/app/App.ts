@@ -7,6 +7,7 @@ import { toUserFacingError } from '../gpu/GpuError';
 import { ResourceRegistry } from '../gpu/ResourceRegistry';
 import { InputState } from '../input/InputState';
 import { OrbitCamera } from '../renderer/OrbitCamera';
+import { createStaticInstanceData } from '../renderer/InstanceData';
 import {
   STATIC_POPULATION_PRESETS,
   type SimulationFrame,
@@ -18,6 +19,7 @@ import {
   MAX_SIMULATION_DELTA_SECONDS,
   SIMULATION_DEFAULTS,
   signedInteractionStrength,
+  simulateCpuFixture,
 } from '../simulation/SimulationModel';
 import { AppStateStore } from './AppState';
 
@@ -355,6 +357,76 @@ export class App {
     return this.#renderer.captureSimulationState(Math.min(64, Math.max(1, instanceCount)));
   }
 
+  public async compareSimulationFixtureForDevelopment(instanceCount = 8): Promise<{
+    readonly fixtureCount: number;
+    readonly maxAbsoluteError: number;
+  }> {
+    const renderer = this.#renderer;
+    const gpu = this.#gpu;
+    if (
+      !import.meta.env.DEV ||
+      this.state.current !== 'paused' ||
+      renderer === undefined ||
+      gpu === undefined ||
+      !this.#canvasSize.drawable
+    ) {
+      throw new Error('Shader comparison is available only in development while paused');
+    }
+    const count = Math.min(64, Math.max(1, Math.floor(instanceCount)));
+    const initial = createStaticInstanceData(count);
+    renderer.resetSimulation();
+    this.#simulationFrame.timeSeconds = 0;
+    this.#simulationFrame.deltaSeconds = FIXED_BENCHMARK_DELTA_SECONDS;
+    this.#simulationFrame.attractorStrength = 0;
+    this.#simulationFrame.frameIndex = 1;
+    renderer.render(
+      gpu.canvasContext,
+      this.#camera,
+      this.#simulationFrame,
+      this.#canvasSize.width,
+      this.#canvasSize.height,
+      count,
+      window.devicePixelRatio,
+    );
+    const actual = await renderer.captureSimulationState(count);
+    let maxAbsoluteError = 0;
+    for (let instance = 0; instance < count; instance += 1) {
+      const offset = instance * 4;
+      const expected = simulateCpuFixture(
+        {
+          position: readVec4(initial.positions, offset),
+          velocity: readVec4(initial.velocities, offset),
+          seed: initial.appearance[offset + 2] ?? 0,
+        },
+        {
+          deltaSeconds: FIXED_BENCHMARK_DELTA_SECONDS,
+          boundaryRadius: this.#simulationFrame.boundaryRadius,
+          maxSpeed: this.#simulationFrame.maxSpeed,
+          containmentStrength: this.#simulationFrame.containmentStrength,
+          maxAcceleration: this.#simulationFrame.maxAcceleration,
+          noiseStrength: this.#simulationFrame.noiseStrength,
+          attractorRadius: this.#simulationFrame.attractorRadius,
+          attractorX: 0,
+          attractorY: 0,
+          attractorZ: 0,
+          attractorStrength: 0,
+        },
+      );
+      for (let component = 0; component < 4; component += 1) {
+        maxAbsoluteError = Math.max(
+          maxAbsoluteError,
+          Math.abs(
+            (actual.positions[offset + component] ?? 0) - (expected.position[component] ?? 0),
+          ),
+          Math.abs(
+            (actual.velocities[offset + component] ?? 0) - (expected.velocity[component] ?? 0),
+          ),
+        );
+      }
+    }
+    return { fixtureCount: count, maxAbsoluteError };
+  }
+
   public dispose(): void {
     if (this.state.current === 'disposed') return;
     this.#generation += 1;
@@ -484,6 +556,15 @@ export class App {
 
 function isPopulationPreset(value: number): value is (typeof STATIC_POPULATION_PRESETS)[number] {
   return STATIC_POPULATION_PRESETS.some((preset) => preset === value);
+}
+
+function readVec4(values: Float32Array, offset: number): [number, number, number, number] {
+  return [
+    values[offset] ?? 0,
+    values[offset + 1] ?? 0,
+    values[offset + 2] ?? 0,
+    values[offset + 3] ?? 0,
+  ];
 }
 
 function requireElement<T extends Element>(
