@@ -27,8 +27,9 @@ jobs:
         run: |
           cp dist/index.html dist/404.html
           tar -czf "swarmgpu-${GITHUB_REF_NAME}.tar.gz" -C dist .
-          tar -czf "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" benchmarks/budgets benchmarks/results/phase-06 benchmarks/results/phase-07 docs/evidence/phase-06 docs/evidence/phase-07
+          tar -czf "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" benchmarks/budgets benchmarks/results/phase-06 benchmarks/results/phase-07 docs/evidence/phase-06 docs/evidence/phase-07 docs/evidence/phase-08
+          sha256sum "swarmgpu-${GITHUB_REF_NAME}.tar.gz" "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" > "swarmgpu-${GITHUB_REF_NAME}-SHA256SUMS.txt"
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "swarmgpu-${GITHUB_REF_NAME}.tar.gz" "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" --verify-tag --title "SwarmGPU ${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md
+        run: gh release create "$GITHUB_REF_NAME" "swarmgpu-${GITHUB_REF_NAME}.tar.gz" "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" "swarmgpu-${GITHUB_REF_NAME}-SHA256SUMS.txt" --verify-tag --title "SwarmGPU ${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md

@@ -45,6 +45,12 @@ if (Object.keys(packageJson.dependencies ?? {}).length > 0) {
 for (const required of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md', 'RELEASE_NOTES.md']) {
   if (!tracked.includes(required)) failures.push(`missing tracked release document: ${required}`);
 }
+const releaseWorkflow = await readFile('.github/workflows/release.yml', 'utf8');
+for (const requiredReleaseContent of ['docs/evidence/phase-08', 'SHA256SUMS.txt', '--verify-tag']) {
+  if (!releaseWorkflow.includes(requiredReleaseContent)) {
+    failures.push(`release workflow omits ${requiredReleaseContent}`);
+  }
+}
 
 if (failures.length > 0) throw new Error(`Release audit failed:\n${failures.join('\n')}`);
 const distBytes = await totalBytes(distFiles);

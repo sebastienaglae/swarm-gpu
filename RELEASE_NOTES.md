@@ -27,4 +27,5 @@ variance rather than treating these numbers as universal hardware guarantees.
 - Adapter limits, browser scheduling, thermals, and drivers materially change capacity/performance.
 - Recovery injection validates application state transitions, not every physical driver failure.
 
-Release downloads contain the exact static rollback artifact and curated Phase 06/07 evidence.
+Release downloads contain the exact static rollback artifact, curated Phase 06/07/08 evidence, and
+a SHA-256 manifest covering both archives.
