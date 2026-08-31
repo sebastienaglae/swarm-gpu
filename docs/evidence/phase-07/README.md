@@ -34,8 +34,11 @@ capacity.
   bounded retry, explicit retry, and dispose/reload.
 - Existing paused shader fixtures verify simulation CPU/GPU agreement, visibility/indirect records,
   LOD uniqueness/ranges, and deterministic NaN recovery.
-- Existing deterministic Phase 05 captures remain the visual reference; Phase 07 changes no shader
-  appearance contract.
+- `npm run test:visual` compares a deterministic static 10k reference frame with documented pixel
+  tolerances; the qualification rerun differed in 221 of 921,600 pixels (0.024%) with 0.027 mean
+  absolute channel error. Broader Phase 05 captures retain narrow/high-DPI and LOD visual coverage.
+
+![Deterministic static 10k visual reference](static-10k-reference.png)
 
 Physical device loss cannot be forced deterministically from WebGPU, so recovery qualification uses
 `device.destroy()` injection and does not promise recovery from every browser/driver failure. A

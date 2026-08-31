@@ -25,6 +25,7 @@
     "stress:quick": "node scripts/run-phase-07.mjs quick",
     "stress:full": "node scripts/run-phase-07.mjs full",
     "stress:reports": "node scripts/check-phase-07-reports.mjs",
+    "test:visual": "node scripts/visual-regression-phase-07.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {
