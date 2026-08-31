@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('shows actionable guidance when WebGPU is unavailable', async ({ page }) => {
   await page.addInitScript(() => {
-    Object.defineProperty(Navigator.prototype, 'gpu', {
+    Object.defineProperty(globalThis.navigator, 'gpu', {
       configurable: true,
       value: undefined,
     });

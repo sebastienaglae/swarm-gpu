@@ -32,7 +32,7 @@ try {
 
   const unsupported = await browser.newPage();
   await unsupported.addInitScript(() => {
-    Object.defineProperty(globalThis.Navigator.prototype, 'gpu', {
+    Object.defineProperty(globalThis.navigator, 'gpu', {
       configurable: true,
       value: undefined,
     });
