@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="300" viewBox="0 0 1120 300" role="img" aria-labelledby="title desc">
+  <title id="title">SwarmGPU frame pipeline</title>
+  <desc id="desc">CPU camera, input, and time update one globals buffer. GPU simulation feeds frustum culling and LOD classification, visible ID compaction, indirect argument generation, and three indirect draws. Delayed telemetry leaves the GPU asynchronously.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1"><stop stop-color="#071226"/><stop offset="1" stop-color="#041019"/></linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0 9 3 0 6Z" fill="#70e6ff"/></marker>
+    <style>.box{fill:#0c2038;stroke:#70e6ff;stroke-width:2}.gpu{fill:#102a2c;stroke:#7affb2}.t{fill:#f4fbff;font:600 16px system-ui,sans-serif;text-anchor:middle}.s{fill:#a9c3d6;font:13px system-ui,sans-serif;text-anchor:middle}.a{stroke:#70e6ff;stroke-width:3;marker-end:url(#arrow)}.lane{fill:#7affb2;font:700 13px system-ui,sans-serif;letter-spacing:2px}</style>
+  </defs>
+  <rect width="1120" height="300" rx="18" fill="url(#bg)"/>
+  <text x="35" y="36" class="lane">CPU</text><text x="35" y="156" class="lane">GPU</text>
+  <rect class="box" x="75" y="20" width="210" height="76" rx="12"/><text class="t" x="180" y="52">Camera · input · time</text><text class="s" x="180" y="76">frame globals only</text>
+  <rect class="box" x="365" y="20" width="190" height="76" rx="12"/><text class="t" x="460" y="52">Uniform upload</text><text class="s" x="460" y="76">one bounded write</text>
+  <path class="a" d="M285 58H355"/><path class="a" d="M460 96V135"/>
+  <rect class="box gpu" x="75" y="145" width="170" height="90" rx="12"/><text class="t" x="160" y="179">Simulation</text><text class="s" x="160" y="203">ping-pong SoA</text>
+  <rect class="box gpu" x="285" y="145" width="190" height="90" rx="12"/><text class="t" x="380" y="179">Cull + LOD</text><text class="s" x="380" y="203">frustum · projected size</text>
+  <rect class="box gpu" x="515" y="145" width="170" height="90" rx="12"/><text class="t" x="600" y="179">Compaction</text><text class="s" x="600" y="203">3 visible-ID lists</text>
+  <rect class="box gpu" x="725" y="145" width="160" height="90" rx="12"/><text class="t" x="805" y="179">Indirect args</text><text class="s" x="805" y="203">GPU-written counts</text>
+  <rect class="box gpu" x="925" y="145" width="150" height="90" rx="12"/><text class="t" x="1000" y="179">Render</text><text class="s" x="1000" y="203">3 indirect draws</text>
+  <path class="a" d="M245 190H275"/><path class="a" d="M475 190H505"/><path class="a" d="M685 190H715"/><path class="a" d="M885 190H915"/>
+  <path d="M1000 245v28H600v-28" fill="none" stroke="#8aa5b8" stroke-width="2" stroke-dasharray="6 5"/><text class="s" x="800" y="290">delayed async timestamps + counters · no frame wait</text>
+</svg>

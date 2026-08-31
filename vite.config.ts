@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => ({
+  base: process.env.VITE_BASE_PATH ?? (mode === 'production' ? '/swarm-gpu/' : '/'),
   build: {
     sourcemap: mode !== 'production',
     target: 'es2022',

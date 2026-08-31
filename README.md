@@ -1,123 +1,167 @@
 # SwarmGPU
 
-SwarmGPU is a raw WebGPU renderer designed to simulate, cull, classify, compact, and draw up to one million simple objects on the GPU. The CPU only updates frame-level parameters and encodes commands; it never iterates over individual instances.
+SwarmGPU is a raw WebGPU renderer that simulates, culls, classifies, compacts, and indirectly draws
+up to one million simple objects while the CPU handles only frame-global parameters and command
+submission.
 
-Phases 00–07 are implemented. The renderer currently runs GPU simulation, conservative frustum
-culling, projected-size LOD classification, capacity-safe compaction, three GPU-generated indirect
-draws, delayed asynchronous GPU telemetry, and stable dynamic resolution without synchronous GPU
-readback. The phase documents below remain
-the project source of truth: implementation work must satisfy the corresponding acceptance criteria
-and retain evidence.
+[**Launch the HTTPS demo**](https://sebastienaglae.github.io/swarm-gpu/) ·
+[Architecture](docs/architecture/overview.md) · [Benchmarks](docs/evidence/phase-06/README.md) ·
+[Reliability evidence](docs/evidence/phase-07/README.md)
 
-Reference Phase 06 target result (`nvidia turing`, Chrome headless, Windows, 1920×1080):
+[![SwarmGPU beauty frame showing a dense luminous drone swarm](docs/media/showcase-poster.webp)](docs/media/swarmgpu-showcase.webm)
 
-```text
-Instances       250,000
-Swarm draws     3 indirect
-Frame interval  16.7 ms median / 16.9 ms p95
-CPU encode      0.3 ms median (including submit)
-GPU frame       2.621 ms median (delayed timestamps)
-Readbacks       0 blocking/frame
-State memory    21.93 MiB tracked
-```
+The poster links to a deterministic ten-second WebM capture. Motion is illustrative; the measured
+results below come from committed benchmark reports, not from the video.
 
-## Target pipeline
+## Verified reference results
 
-```text
-frame parameters (CPU)
-        |
-        v
-GPU simulation -> frustum culling -> LOD classification
-        -> visible-list compaction -> indirect arguments -> rendering
-```
+Reference environment: browser-exposed `nvidia turing` adapter correlated with the host's NVIDIA
+GeForce GTX 1650 (4 GiB), Google Chrome 151.0.7922.174 headless, Windows 10.0.26200, AC power,
+1920×1080, `timestamp-query` available. Chrome withheld the precise device string, so the inventory
+correlation is disclosed rather than presented as browser-reported identity.
 
-## Non-negotiable targets
+| Scenario                 | Instances rendered |       LOD near / mid / far |   Frame p95 | CPU encode + submit median |   GPU median |
+| ------------------------ | -----------------: | -------------------------: | ----------: | -------------------------: | -----------: |
+| Static renderer baseline |            100,000 |           direct near draw |     17.0 ms |                     0.3 ms |     0.852 ms |
+| **Primary target**       |        **250,000** |            250,000 / 0 / 0 | **16.9 ms** |                 **0.3 ms** | **2.621 ms** |
+| 1m, forced 10% visible   |            100,000 |    14,859 / 84,070 / 1,071 |     16.9 ms |                     0.3 ms |     1.638 ms |
+| 1m, forced 100% visible  |          1,000,000 | 149,859 / 839,567 / 10,574 |     16.9 ms |                     0.3 ms |     6.029 ms |
+| Representative LOD scene |            500,000 |   75,024 / 419,639 / 5,337 |     16.9 ms |                     0.3 ms |     3.539 ms |
 
-- Raw WebGPU, TypeScript, WGSL, Vite, and a small math dependency only.
-- No per-instance CPU loop after scene initialization.
-- No GPU readback in the interactive frame loop.
-- Zero intentional JavaScript allocations in the steady-state frame loop.
-- Persistent buffers, bind groups, and pipelines.
-- Reproducible benchmarks with hardware and browser metadata.
-- Graceful handling of unsupported WebGPU, resize, pause/resume, and device loss.
-- Initial performance gate: 250,000 simulated instances at 60 FPS on the reference machine; stretch goal: 1,000,000.
+These are measurements on one machine, not minimum specifications. The primary target report is
+[committed as raw samples and metadata](benchmarks/results/phase-06/sim-250k/2026-08-30_8b9ff88_nvidia-turing-chrome-win11.json).
+Its identical-contract rerun exposed browser cadence variance and remains documented rather than
+discarded. `Readbacks: 0/interactive frame`; telemetry is asynchronous and delayed.
 
-## Delivery phases
+## GPU pipeline
 
-| Phase                                                                             | Outcome                                                                 | Exit gate                                               |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
-| [00 — Product contract](docs/phases/00-product-contract.md)                       | Scope, metrics, constraints, and public-repository standards are frozen | Project charter approved                                |
-| [01 — Project foundation](docs/phases/01-project-foundation.md)                   | Toolchain, CI, application shell, and WebGPU capability flow work       | Clean CI and usable unsupported-device screen           |
-| [02 — Renderer baseline](docs/phases/02-renderer-baseline.md)                     | Camera, mesh, depth, resize, and direct instancing render correctly     | 100,000 static instances render reliably                |
-| [03 — GPU simulation](docs/phases/03-gpu-simulation.md)                           | Compute-driven motion with ping-pong state and interaction              | 500,000 stable simulated instances                      |
-| [04 — GPU culling and compaction](docs/phases/04-gpu-culling-compaction.md)       | Visibility remains GPU-resident and feeds indirect rendering            | Zero-readback indirect draw is correct                  |
-| [05 — GPU LOD and visual system](docs/phases/05-gpu-lod-visuals.md)               | Three GPU-selected LODs and a polished swarm scene                      | Stable transitions and at most three swarm draws        |
-| [06 — Performance and observability](docs/phases/06-performance-observability.md) | Profiling, timestamps, dynamic resolution, and benchmark harness        | 250k/60-FPS target demonstrated reproducibly            |
-| [07 — Reliability and stress](docs/phases/07-reliability-stress.md)               | Recovery, lifecycle, validation, and stress scenarios are proven        | Stress matrix passes without leaks or validation errors |
-| [08 — Public release and demo](docs/phases/08-public-release.md)                  | Documentation, media, hosted demo, and release automation are ready     | Public v1.0 release is reproducible                     |
-| [09 — Research extensions](docs/phases/09-research-extensions.md)                 | Optional experiments are isolated from the v1 core                      | Each experiment has evidence and can be removed cleanly |
+![Diagram: CPU camera, input, and time feed one globals buffer; GPU simulation flows through culling, LOD compaction, indirect arguments, and three indirect draws, with delayed asynchronous telemetry](docs/media/pipeline.svg)
 
-## How work is governed
+The CPU never loops over active instances after deterministic initialization. One command buffer
+orders simulation, culling/LOD classification, finalization, and rendering. WebGPU command ordering
+provides synchronization; ping-pong state prevents read/write aliasing, and visibility stays on the
+GPU.
 
-1. Work phases execute in numeric order. A later phase may be prototyped, but it cannot become the main branch baseline until earlier exit gates pass.
-2. Every pull request names one primary phase and one or more checklist items from that phase.
-3. A checkbox is marked complete only when its evidence exists: test, capture, benchmark result, or documented decision.
-4. Performance claims always include GPU, CPU, OS, browser/version, resolution, instance count, visible count, and sampling method.
-5. Architectural changes update the affected phase document before or in the same pull request as the code.
-6. Optional work must not delay phases 00–08. Phase 09 is explicitly outside the v1 critical path.
+## Features
 
-Project governance and technical contracts:
+- Raw WebGPU and WGSL: no rendering framework and no WebGL fallback.
+- GPU simulation over structure-of-arrays position, velocity, and immutable appearance buffers.
+- Conservative frustum culling and projected-size near/mid/far LOD selection.
+- Capacity-safe atomic compaction into three GPU-resident visible-ID regions.
+- Three GPU-written indexed indirect records and at most three swarm draws.
+- Persistent pipelines, bind groups, buffers, descriptors, and attachment ownership.
+- Delayed per-pass GPU timestamp telemetry with honest unsupported-device fallback.
+- Quantized dynamic resolution with sustained-window hysteresis.
+- Bounded device-loss recovery, deterministic scene rebuild, and one-loop ownership.
+- Versioned benchmarks, full hardware stress reports, diagnostics export, and visual regression.
 
-- [Contributing guide](CONTRIBUTING.md), [code of conduct](CODE_OF_CONDUCT.md), [security policy](SECURITY.md), and [MIT license](LICENSE).
-- [Architecture decisions](docs/architecture/decisions/README.md), [reference hardware](docs/reference-hardware.md), and [initial memory budget](docs/architecture/memory-budget.md).
-- [Benchmark evidence policy](docs/benchmarking/evidence-policy.md) and [versioned result schema](benchmarks/schemas/benchmark-result.schema.json).
+## Quick start
 
-## Planned repository layout
+Requirements:
 
-```text
-src/
-  app/              lifecycle and UI orchestration
-  gpu/              adapter/device setup, resources, pipelines, timing
-  renderer/         render graph, camera, meshes, LOD passes
-  simulation/       state initialization and compute orchestration
-  shaders/          WGSL modules
-  diagnostics/      overlay, capabilities, benchmark recording
-  input/            allocation-free interaction state
-tests/               unit, browser, visual, and stress tests
-benchmarks/          scenarios, baselines, reports, and schemas
-public/              static release assets
-docs/
-  phases/            authoritative implementation plan
-  architecture/      diagrams and accepted decision records
-```
-
-## Development
-
-Prerequisites: Node.js 22.20 (pinned in `.nvmrc`) and npm 11.18. From a clean clone:
+- Node.js 22.20.x and npm 11.18.x (the repository pins both contracts).
+- A secure context: `localhost` for development or HTTPS in production.
+- A browser/device combination exposing WebGPU. The reference browser is Chrome; exact compatibility
+  changes over time, so consult the browser's WebGPU status rather than assuming identical limits.
 
 ```bash
+git clone https://github.com/sebastienaglae/swarm-gpu.git
+cd swarm-gpu
 npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite (normally `http://127.0.0.1:5173`). WebGPU requires a secure context;
-localhost qualifies. Run the complete local quality gate with `npm run check` and the browser smoke
-suite with `npm run test:e2e`. The browser suite installs with `npx playwright install chromium`
-when Chromium is not already present.
+Open the printed localhost URL. If WebGPU, an adapter, or canvas configuration is unavailable, the app
+shows an actionable retry screen instead of a blank canvas.
 
-Use the in-app LOD controls in development builds to force a representation, adjust projected-size
-thresholds, or enable classification colors. `?direct=1` retains the Phase 04 direct-draw reference;
-benchmark and capture scripts live under `scripts/`.
+Quality gates:
 
-Phase 06 methodology, raw reports, rerun variance, and optimization decisions are documented in the
-[performance evidence](docs/evidence/phase-06/README.md). Run the committed regression budgets with
-`npm run benchmark:budgets`.
+```bash
+npm run check
+npm run test:e2e
+npm run benchmark:budgets
+npm run stress:reports
+npm run smoke:production
+```
 
-Reliability qualification, the complete 32-minute soak matrix, lifecycle storms, recovery injection,
-and known limits are recorded in the [Phase 07 evidence](docs/evidence/phase-07/README.md). Validate
-the committed hardware reports with `npm run stress:reports`; run a local real-WebGPU smoke with
-`npm run stress:quick` while the development server is active.
+## Controls
 
-## Definition of a trustworthy performance claim
+| Control        | Behavior                                                        |
+| -------------- | --------------------------------------------------------------- |
+| Drag / wheel   | Orbit and zoom the camera                                       |
+| Pointer force  | Disable, attract, or repel the swarm under the pointer          |
+| Population     | Select 10k, 100k, 250k, 500k, or 1m when adapter limits allow   |
+| Pause / resume | Freeze simulation without accumulating a resume delta           |
+| Reset          | Restore deterministic state and camera                          |
+| Render scale   | Select 50–100% internal scale or slow automatic adaptation      |
+| Capture mode   | Hide interface chrome for a clean frame                         |
+| Export metrics | Download bounded diagnostics, capabilities, and delayed samples |
 
-The headline target is not “one million objects” in isolation. A valid result reports a fixed scenario, warm-up period, sample duration, median and percentile frame times, CPU and GPU timing when supported, resolution, visible population, draw count, and whether the browser used native WebGPU. Results without that context are exploratory and must not be placed in the README headline.
+Unsupported population options are disabled from validated adapter limits; selection never silently
+allocates a smaller population.
+
+## Reproduce benchmarks and stress
+
+With `npm run dev -- --host 127.0.0.1 --port 5174` running from a clean checkout:
+
+```bash
+node scripts/benchmark-phase-06.mjs http://127.0.0.1:5174/ <clean-commit> smoke
+node scripts/benchmark-phase-06.mjs http://127.0.0.1:5174/ <clean-commit> full
+npm run stress:quick
+npm run stress:full
+```
+
+Benchmark mode fixes seed, timestep, camera, input, canvas, scale, population, warm-up, and duration.
+The overlay is disabled during measurement; GPU results drain afterward. See the
+[benchmark contract](docs/benchmarking/phase-06-runner.md), [evidence policy](docs/benchmarking/evidence-policy.md),
+and [stress protocol](docs/testing/phase-07-stress.md).
+
+## Architecture and memory
+
+Per capacity instance, SwarmGPU owns 32 bytes of ping-pong positions, 32 bytes of ping-pong
+velocities, 16 bytes of immutable appearance, and 12 bytes across three full-capacity visible-ID
+regions: **92 bytes/instance**. One-million tracked state is 92,000,108 bytes (87.74 MiB), excluding
+browser/driver internals and attachments.
+
+Pass ordering, layouts, synchronization, telemetry, and lifecycle are documented in the
+[architecture overview](docs/architecture/overview.md). Key decisions include
+[raw WebGPU](docs/architecture/decisions/0001-raw-webgpu.md),
+[structure of arrays](docs/architecture/decisions/0002-structure-of-arrays.md), and
+[rendering conventions](docs/architecture/decisions/0003-rendering-conventions.md).
+
+## Evidence-driven optimization
+
+| Experiment                           |                                Before |                       After | Decision / comparable evidence                                                 |
+| ------------------------------------ | ------------------------------------: | --------------------------: | ------------------------------------------------------------------------------ |
+| Timestamp readback cadence, SIM-250K | frame p95 33.3 ms at 15-frame cadence | 16.9 ms at 60-frame cadence | Retain delayed 60-frame sampling; [analysis](docs/evidence/phase-06/README.md) |
+| 1m visibility                        |                  6.029 ms GPU at 100% |         1.638 ms GPU at 10% | GPU culling materially reduces render/atomic work                              |
+| 500k internal scale                  |                3.539 ms GPU at native |         2.818 ms GPU at 50% | Adapt only when raster-bound; never hide native results                        |
+| Workgroup size 128 vs 256            |                              3.473 ms |                    3.408 ms | Difference too noisy/small; retain simpler 128 default                         |
+
+Packing, AoS conversion, render bundles, and prefix-scan compaction were rejected for v1 because the
+measured simulation/CPU/culling costs did not justify added complexity.
+
+## Browser support and limitations
+
+- WebGPU and a secure context are mandatory. There is no WebGL fallback.
+- Adapter capacity, performance, scheduling, thermals, and driver behavior vary materially.
+- `timestamp-query` is optional; GPU timings show unavailable when unsupported.
+- Visible and per-LOD diagnostics are intentionally delayed and therefore approximate snapshots.
+- The renderer uses an opaque canvas and opaque geometry; transparency sorting is outside v1 scope.
+- Dynamic resolution changes only internal raster size and is disabled in deterministic benchmarks.
+- Automatic recovery is bounded and cannot guarantee recovery from every physical driver failure.
+- The reference matrix covers one discrete GPU/browser path; broader compatibility reports are
+  welcome through the issue template.
+
+## Release, contribution, and governance
+
+- [Changelog](CHANGELOG.md) and [v1.0 release notes](RELEASE_NOTES.md)
+- [Hosting and rollback](docs/hosting.md)
+- [Contributing](CONTRIBUTING.md), [security](SECURITY.md), and
+  [code of conduct](CODE_OF_CONDUCT.md)
+- [MIT license](LICENSE) and [third-party/asset notices](THIRD_PARTY_NOTICES.md)
+- [Implementation phases](docs/phases/00-product-contract.md) and optional
+  [post-v1 research](docs/phases/09-research-extensions.md)
+
+SwarmGPU is deliberately specialized: one mesh family, one large population, a GPU-owned visibility
+pipeline, and measurable behavior. Phase 09 experiments remain isolated from the v1 core.

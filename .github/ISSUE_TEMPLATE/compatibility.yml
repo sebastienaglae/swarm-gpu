@@ -1,0 +1,53 @@
+name: Browser/device compatibility report
+description: Report a supported or unsupported WebGPU browser and adapter combination.
+title: '[Compatibility]: '
+labels: [compatibility]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include serial numbers, account information, tokens, or unrelated personal data.
+  - type: input
+    id: version
+    attributes:
+      label: SwarmGPU version or commit
+      placeholder: v1.0.0 or commit hash
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and exact version
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and version
+    validations:
+      required: true
+  - type: input
+    id: adapter
+    attributes:
+      label: GPU/adapter and driver
+      description: Report only information exposed by the browser or operating system.
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Demo runs correctly
+        - WebGPU unavailable
+        - Initialization fails
+        - Device is lost
+        - Visual or performance problem
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics and reproduction
+      description: Paste the in-app diagnostics export after reviewing it for information you do not want public.
+    validations:
+      required: true

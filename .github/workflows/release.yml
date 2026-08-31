@@ -1,0 +1,34 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run release:check
+      - name: Build rollback artifact
+        run: |
+          cp dist/index.html dist/404.html
+          tar -czf "swarmgpu-${GITHUB_REF_NAME}.tar.gz" -C dist .
+          tar -czf "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" benchmarks/budgets benchmarks/results/phase-06 benchmarks/results/phase-07 docs/evidence/phase-06 docs/evidence/phase-07
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "swarmgpu-${GITHUB_REF_NAME}.tar.gz" "swarmgpu-${GITHUB_REF_NAME}-evidence.tar.gz" --verify-tag --title "SwarmGPU ${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md
