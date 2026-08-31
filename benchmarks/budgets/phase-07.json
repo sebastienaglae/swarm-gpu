@@ -1,6 +1,7 @@
 {
   "contractVersion": "1.0.0",
   "referenceCommit": "c6030da",
+  "scenarioCommits": { "RECOVERY-25": "a261d3f" },
   "requiredScenarios": [
     "SOAK-10K",
     "SOAK-100K",

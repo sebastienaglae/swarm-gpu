@@ -1,8 +1,10 @@
 # Phase 07 evidence
 
 Full qualification ran on commit `c6030da` using the reference NVIDIA Turing adapter, Chrome 151
-headless, Windows 10.0.26200, AC-powered host. All eleven scenarios passed; reports are committed under
-`benchmarks/results/phase-07/` and checked by `npm run stress:reports`.
+headless, Windows 10.0.26200, AC-powered host. After the audit fixed population restoration, the
+25-cycle recovery case was repeated on `a261d3f` with an assertion after every recovery. All eleven
+scenarios passed; reports are committed under `benchmarks/results/phase-07/` and checked by
+`npm run stress:reports`.
 
 | Scenario                |          Contract | Result | Timing drift | Resource evidence                                              |
 | ----------------------- | ----------------: | ------ | -----------: | -------------------------------------------------------------- |

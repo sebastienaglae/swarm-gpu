@@ -3,13 +3,16 @@ import { readFile, readdir } from 'node:fs/promises';
 const contract = JSON.parse(await readFile('benchmarks/budgets/phase-07.json', 'utf8'));
 const files = await collectJsonFiles('benchmarks/results/phase-07');
 const reports = [];
-for (const file of files.filter((path) => path.endsWith(`_${contract.referenceCommit}.json`))) {
+for (const file of files) {
   reports.push(JSON.parse(await readFile(file, 'utf8')));
 }
 
 const failures = [];
 for (const id of contract.requiredScenarios) {
-  const report = reports.find((candidate) => candidate.scenario?.id === id);
+  const expectedCommit = contract.scenarioCommits?.[id] ?? contract.referenceCommit;
+  const report = reports.find(
+    (candidate) => candidate.scenario?.id === id && candidate.source?.commit === expectedCommit,
+  );
   if (report === undefined) {
     failures.push(`${id}: missing reference report`);
     continue;
@@ -18,7 +21,7 @@ for (const id of contract.requiredScenarios) {
   if (report.scenario.scenarioVersion !== contract.contractVersion) {
     failures.push(`${id}: scenario version mismatch`);
   }
-  if (report.source.commit !== contract.referenceCommit || report.source.dirty !== false) {
+  if (report.source.commit !== expectedCommit || report.source.dirty !== false) {
     failures.push(`${id}: invalid source metadata`);
   }
   if (report.status !== 'passed') failures.push(`${id}: status is ${String(report.status)}`);
