@@ -1141,7 +1141,10 @@ export class App {
     }
     if (largestSupported === 0)
       throw new Error('This adapter cannot render the minimum population');
-    const preferred = Math.min(500_000, largestSupported);
+    const preferred =
+      isPopulationPreset(this.#instanceCount) && this.#instanceCount <= capacity
+        ? this.#instanceCount
+        : Math.min(500_000, largestSupported);
     this.#instanceCount = preferred;
     this.#populationSelect.value = String(preferred);
   }

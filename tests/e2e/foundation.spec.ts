@@ -408,6 +408,7 @@ test('renders and keeps lifecycle controls idempotent with a supported WebGPU co
     .poll(() => page.evaluate(() => Reflect.get(globalThis, '__MOCK_DEVICE_REQUEST_COUNT__')))
     .toBe(2);
   await expect(page.locator('html')).toHaveAttribute('data-app-state', 'running');
+  await expect(page.locator('#metric-instances')).toHaveText('100,000');
 
   await page.evaluate(() => {
     Reflect.get(globalThis, '__SWARM_GPU_APP__').simulateDeviceLossForDevelopment();
