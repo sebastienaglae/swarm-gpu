@@ -1,6 +1,7 @@
 # Reference development environment
 
-Recorded on 2026-08-30 for Phase 00. This profile identifies the machine intended for initial development and primary local qualification. It is not yet a verified WebGPU adapter report.
+Recorded on 2026-08-30 and qualified through Phase 07. This profile identifies the machine used for
+primary local WebGPU benchmarks and reliability stress.
 
 ## Host
 
@@ -43,7 +44,9 @@ The following checks are now implemented and captured:
 - Relevant buffer, storage-binding, compute-dispatch/workgroup, texture, and alignment limits.
 - Safe derived capacity for every planned preset from 10k through 1m.
 
-Browser backend and driver description remain unavailable through the captured WebGPU surface and must never be invented. Performance numbers remain development observations until the Phase 06 benchmark contract is satisfied.
+Browser backend and driver description remain unavailable through the captured WebGPU surface and
+must never be invented. Phase 06 performance reports and the Phase 07 full stress matrix now satisfy
+their committed contracts on the browser-exposed `nvidia turing` adapter.
 
 ## Reference conditions
 

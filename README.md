@@ -2,7 +2,7 @@
 
 SwarmGPU is a raw WebGPU renderer designed to simulate, cull, classify, compact, and draw up to one million simple objects on the GPU. The CPU only updates frame-level parameters and encodes commands; it never iterates over individual instances.
 
-Phases 00–06 are implemented. The renderer currently runs GPU simulation, conservative frustum
+Phases 00–07 are implemented. The renderer currently runs GPU simulation, conservative frustum
 culling, projected-size LOD classification, capacity-safe compaction, three GPU-generated indirect
 draws, delayed asynchronous GPU telemetry, and stable dynamic resolution without synchronous GPU
 readback. The phase documents below remain
@@ -112,6 +112,11 @@ benchmark and capture scripts live under `scripts/`.
 Phase 06 methodology, raw reports, rerun variance, and optimization decisions are documented in the
 [performance evidence](docs/evidence/phase-06/README.md). Run the committed regression budgets with
 `npm run benchmark:budgets`.
+
+Reliability qualification, the complete 32-minute soak matrix, lifecycle storms, recovery injection,
+and known limits are recorded in the [Phase 07 evidence](docs/evidence/phase-07/README.md). Validate
+the committed hardware reports with `npm run stress:reports`; run a local real-WebGPU smoke with
+`npm run stress:quick` while the development server is active.
 
 ## Definition of a trustworthy performance claim
 

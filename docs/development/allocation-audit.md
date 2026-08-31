@@ -69,3 +69,16 @@ The retained Phase 02 evidence records source inspection and benchmark behavior 
   instance count rather than CPU-visible counters.
 - Camera-sweep, ID capture, and benchmark counters remain paused development readbacks outside the
   interactive loop.
+
+## Phase 07 lifecycle audit
+
+- Checked resource registries expose cumulative created/destroyed/active ownership in development
+  diagnostics. Animation-loop diagnostics expose scheduled/cancelled/executed and peak active owners.
+- The 100-cycle scene rebuild stress created and destroyed 1,200 tracked resources and returned from
+  12 to 12 active resources. The 25-cycle recovery injection created/destroyed 300 and also returned
+  to 12 active resources; peak loop ownership remained one.
+- Depth textures are explicitly destroyed on resize/rebuild. Timestamp query sets plus resolve and
+  readback buffers are destroyed by the telemetry ring. State/mesh/uniform/visible/indirect buffers
+  are destroyed through the renderer registry.
+- Browser process memory is not used as standalone leak evidence; stable ownership, timing drift,
+  validation events, and repeated baselines form the qualification evidence.

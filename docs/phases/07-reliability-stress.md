@@ -17,38 +17,38 @@ Failures are categorized as unsupported capability, initialization error, runtim
 
 ### Defensive validation
 
-- [ ] Validate instance count, buffer byte sizes, alignments, dispatch counts, texture dimensions, indirect offsets, and mesh ranges before GPU creation/encoding.
-- [ ] Use checked integer arithmetic helpers and reject counts that overflow JavaScript-safe or WebGPU-relevant ranges.
-- [ ] Clamp all user numeric inputs and reject non-finite values.
-- [ ] Guard shader invocation bounds, output capacities, degenerate normalization, and timestep extremes.
-- [ ] Scope expected GPU errors in tests; treat uncaptured errors as failures.
-- [ ] Give every large resource and pass a useful debug label.
+- [x] Validate instance count, buffer byte sizes, alignments, dispatch counts, texture dimensions, indirect offsets, and mesh ranges before GPU creation/encoding.
+- [x] Use checked integer arithmetic helpers and reject counts that overflow JavaScript-safe or WebGPU-relevant ranges.
+- [x] Clamp all user numeric inputs and reject non-finite values.
+- [x] Guard shader invocation bounds, output capacities, degenerate normalization, and timestep extremes.
+- [x] Scope expected GPU errors in tests; treat uncaptured errors as failures.
+- [x] Give every large resource and pass a useful debug label.
 
 ### Device loss and recovery
 
-- [ ] Stop scheduling/encoding immediately when loss is observed.
-- [ ] Surface loss reason/message in developer diagnostics without promising recovery.
-- [ ] Dispose CPU-side listeners/references and destroy eligible old resources.
-- [ ] Reacquire adapter/device and rebuild resources from deterministic scene configuration.
-- [ ] Restore camera/settings safely and restart exactly one loop.
-- [ ] Bound automatic retries and provide an explicit retry/reload action.
-- [ ] Test recovery state transitions through injection even when physical device loss cannot be forced.
+- [x] Stop scheduling/encoding immediately when loss is observed.
+- [x] Surface loss reason/message in developer diagnostics without promising recovery.
+- [x] Dispose CPU-side listeners/references and destroy eligible old resources.
+- [x] Reacquire adapter/device and rebuild resources from deterministic scene configuration.
+- [x] Restore camera/settings safely and restart exactly one loop.
+- [x] Bound automatic retries and provide an explicit retry/reload action.
+- [x] Test recovery state transitions through injection even when physical device loss cannot be forced.
 
 ### Lifecycle robustness
 
-- [ ] Repeatedly start, pause, resume, reset, rebuild scene, and dispose.
-- [ ] Handle document visibility changes without an enormous simulation delta.
-- [ ] Handle canvas removal/reinsertion and zero-area resize.
-- [ ] Verify old depth textures, query buffers, state buffers, observers, and event handlers are released.
-- [ ] Provide development counters for resource creation/destruction and active loop ownership.
+- [x] Repeatedly start, pause, resume, reset, rebuild scene, and dispose.
+- [x] Handle document visibility changes without an enormous simulation delta.
+- [x] Handle canvas removal/reinsertion and zero-area resize.
+- [x] Verify old depth textures, query buffers, state buffers, observers, and event handlers are released.
+- [x] Provide development counters for resource creation/destruction and active loop ownership.
 
 ### Stress automation
 
-- [ ] Create a scenario runner with timeout, progress, result, error capture, and optional screenshots.
-- [ ] Run quick stress in pull requests and extended stress manually/nightly on WebGPU hardware.
-- [ ] Persist scenario version, commit, environment, maximum memory estimate, validation events, and timing drift.
-- [ ] Detect performance degradation across intervals that may indicate thermal throttling separately from leaks.
-- [ ] Document that browser process memory is approximate and use multiple signals before claiming a leak.
+- [x] Create a scenario runner with timeout, progress, result, error capture, and optional screenshots.
+- [x] Run quick stress in pull requests and extended stress manually/nightly on WebGPU hardware.
+- [x] Persist scenario version, commit, environment, maximum memory estimate, validation events, and timing drift.
+- [x] Detect performance degradation across intervals that may indicate thermal throttling separately from leaks.
+- [x] Document that browser process memory is approximate and use multiple signals before claiming a leak.
 
 ## Required stress matrix
 
