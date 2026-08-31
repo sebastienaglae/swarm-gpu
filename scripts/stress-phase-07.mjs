@@ -227,6 +227,12 @@ async function runScenario(scenario) {
           await page.locator('#retry-button').click();
           await page.waitForFunction(() => document.documentElement.dataset.appState === 'running');
         }
+        const restoredPopulation = await page.locator('#population-select').inputValue();
+        if (restoredPopulation !== String(scenario.population)) {
+          throw new Error(
+            `Recovery changed population ${String(scenario.population)} -> ${restoredPopulation}`,
+          );
+        }
         completed = index + 1;
       }
     } else if (scenario.kind === 'capacity') {
