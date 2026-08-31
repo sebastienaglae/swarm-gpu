@@ -50,7 +50,7 @@ The README must distinguish measured results from targets. Replace every placeho
 - [x] Configure correct base path, immutable hashed assets, useful fallback page, and no secret configuration.
 - [x] Test production build from a clean clone before deployment.
 - [x] Add deployment preview for pull requests if it does not broaden permissions unnecessarily.
-- [ ] Smoke-test hosted demo on supported browsers and one unsupported path.
+- [x] Smoke-test hosted demo on supported browsers and one unsupported path.
 - [x] Document hosting ownership, rollback, and custom-domain details if used.
 
 ### Release engineering
@@ -64,7 +64,7 @@ The README must distinguish measured results from targets. Replace every placeho
 
 ## Release acceptance checklist
 
-- [ ] Hosted demo loads over HTTPS and reaches first interactive frame without console/validation errors.
+- [x] Hosted demo loads over HTTPS and reaches first interactive frame without console/validation errors.
 - [x] Default settings are safe on the minimum supported capability profile.
 - [x] 10k, 100k, 250k, 500k, and 1m options are enabled or clearly disabled based on capacity.
 - [x] README claims match committed benchmark reports and released code.

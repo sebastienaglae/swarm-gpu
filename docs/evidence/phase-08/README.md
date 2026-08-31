@@ -30,11 +30,19 @@ A local clone made with `git clone --local --no-hardlinks` at commit `2227a16` p
 The host shell's Node.js 22.12.0 was also deliberately rejected by `engine-strict`, confirming that
 the documented prerequisite is enforced instead of silently ignored.
 
-## Deployment boundary
+## Hosted qualification
 
-The production and unsupported-device paths pass locally through `npm run smoke:production`. At the
-time this evidence was written, the canonical Pages URL returned HTTP 404 because repository Pages
-had not yet been enabled/deployed. The repository policy for this implementation was **commit, do
-not push**; therefore hosted acceptance and GitHub Release publication remain intentionally open.
-The Pages and release workflows contain the required deployment, rollback bundle, evidence bundle,
-and least-privilege permissions for the owner-triggered push.
+The production and unsupported-device paths pass locally through `npm run smoke:production`. GitHub
+Pages workflow [run 33379694034](https://github.com/sebastienaglae/swarm-gpu/actions/runs/33379694034)
+deployed commit `2227a16372767bd203562e3d571fbd40a67ab7b5`. On 2026-08-31,
+`npm run smoke:hosted` verified that the canonical URL:
+
+- responds successfully over HTTPS;
+- reaches the first `running` WebGPU frame without console or page errors;
+- serves a content-hashed module from the `/swarm-gpu/` base path; and
+- reaches the actionable `failed` state when `navigator.gpu` is deliberately unavailable.
+
+The deployed application code and bundle are unchanged by the later evidence/test-only commit. The
+repository policy for this implementation remains **commit, do not push**; therefore the final tag
+and GitHub Release publication remain intentionally open. The release workflow contains the required
+rollback bundle, evidence bundle, and least-privilege permissions for the owner-triggered tag push.

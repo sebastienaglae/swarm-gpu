@@ -22,4 +22,4 @@ for each tag. No DNS or custom-domain rollback exists because v1.0 uses the defa
 Before deployment, `npm run smoke:production` exercises the built `/swarm-gpu/` path in real Chrome,
 checks content-hashed asset URLs, reaches the first WebGPU frame, and verifies the unsupported-device
 screen. After deployment, repeat the same supported/unsupported checks against the canonical HTTPS
-URL and record the workflow/release link in the Phase 08 evidence.
+URL with `npm run smoke:hosted` and record the workflow/release link in the Phase 08 evidence.

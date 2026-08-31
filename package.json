@@ -30,6 +30,7 @@
     "check:links": "node scripts/check-links.mjs",
     "audit:release": "node scripts/release-audit.mjs",
     "smoke:production": "npm run build && node scripts/smoke-production.mjs",
+    "smoke:hosted": "node scripts/smoke-hosted.mjs",
     "release:check": "npm run check && npm run test:e2e && npm run benchmark:budgets && npm run stress:reports && npm run check:links && npm run audit:release",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
   },
